@@ -17,6 +17,7 @@ import DemoOrderListingPage from "./pages/admin/DemoOrderListingPage";
 import ProductCustomizerPage from "./pages/ProductCustomizerPage";
 import OrderHistoryPage from "./pages/OrderHistoryPage";
 import PublicLayout from "./components/PublicLayout";
+import CustomizerLayout from "./components/CustomizerLayout"; // Import the new CustomizerLayout
 import NotFound from "./pages/NotFound";
 import { DemoOrderModalProvider } from "./contexts/DemoOrderModalContext";
 import DemoUsersWithOrdersPage from "./pages/admin/DemoUsersWithOrdersPage";
@@ -58,8 +59,7 @@ function AppContent() {
             <Route index element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/categories/:categoryId/brands" element={<BrandsPage />} />
-            <Route path="/categories/:categoryId/brands/:brandId/products" element={<ProductListingPage />} />
-            <Route path="/customize-cover/:productId" element={<ProductCustomizerPage />} />
+            {/* ProductCustomizerPage now uses CustomizerLayout */}
             <Route path="/orders" element={<OrderHistoryPage />} />
             <Route path="/order-success" element={<OrderSuccessPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
@@ -67,6 +67,16 @@ function AppContent() {
             <Route path="/cancellation-refund" element={<CancellationRefundPage />} />
             <Route path="/shipping-delivery" element={<ShippingDeliveryPage />} />
             <Route path="/contact-us" element={<ContactUsPage />} />
+          </Route>
+
+          {/* Route for ProductCustomizerPage using CustomizerLayout */}
+          <Route path="/customize-cover/:productId" element={<CustomizerLayout />}>
+            <Route index element={<ProductCustomizerPage />} />
+          </Route>
+
+          {/* ProductListingPage remains under PublicLayout as it's a general public page */}
+          <Route path="/categories/:categoryId/brands/:brandId/products" element={<PublicLayout />}>
+            <Route index element={<ProductListingPage />} />
           </Route>
 
           {/* Admin Routes */}
