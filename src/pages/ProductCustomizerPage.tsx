@@ -968,25 +968,32 @@ const ProductCustomizerPage = () => {
       const canvasAspectRatio = canvasWidth / canvasHeight;
   
       let newWidth, newHeight;
-      let shouldApplyBlur = false;
+      let shouldApplyBlurBasedOnSize = false;
   
       if (imageAspectRatio > canvasAspectRatio) {
         newWidth = canvasWidth;
         newHeight = newWidth / imageAspectRatio;
         if (newHeight < canvasHeight) {
-          shouldApplyBlur = true;
+          shouldApplyBlurBasedOnSize = true;
         }
       } else {
         newHeight = canvasHeight;
         newWidth = newHeight * imageAspectRatio;
         if (newWidth < canvasWidth) {
-          shouldApplyBlur = true;
+          shouldApplyBlurBasedOnSize = true;
         }
       }
   
       const newX = (canvasWidth - newWidth) / 2;
       const newY = (canvasHeight - newHeight) / 2;
   
+      // Check if there's already an image element on the canvas
+      // This needs to be done BEFORE updating designElements state
+      const hasExistingImageOnCanvas = designElements.some(el => el.type === 'image');
+      
+      // Apply blur only if it's the first image being added AND it's smaller than the canvas
+      const finalShouldApplyBlur = !hasExistingImageOnCanvas && shouldApplyBlurBasedOnSize;
+
       const newElement: DesignElement = {
         id: newElementId,
         type: 'image',
@@ -998,10 +1005,11 @@ const ProductCustomizerPage = () => {
         rotation: 0,
       };
   
-      setDesignElements(prev => [
-        ...prev.filter(el => el.type !== 'image'),
-        newElement
-      ]);
+      setDesignElements(prev => {
+        // Filter out existing image elements to ensure only one image is present
+        const updatedElements = prev.filter(el => el.type !== 'image');
+        return [...updatedElements, newElement];
+      });
       setSelectedElementId(newElement.id);
 
       const compressionOptions = {
@@ -1030,7 +1038,7 @@ const ProductCustomizerPage = () => {
             );
             URL.revokeObjectURL(tempUrl);
 
-            if (shouldApplyBlur) {
+            if (finalShouldApplyBlur) {
               handleBlurBackground(uploadedUrl);
             } else {
               setBlurredBackgroundImageUrl(null);
@@ -1430,7 +1438,7 @@ const ProductCustomizerPage = () => {
               {blurredBackgroundImageUrl && (
                 <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={handleClearBlur}>
                   <XCircle className="h-5 w-5" />
-                  <span className="text-xs">Delete Blur</span> {/* Changed text here */}
+                  <span className="text-xs">Delete Blur</span>
                 </Button>
               )}
               <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={handleClearBackground}>
