@@ -1,0 +1,18 @@
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import Header from './Header';
+import Footer from './Footer'; // Import the new Footer
+
+const PublicLayout = () => {
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-grow pt-1">
+        <Outlet />
+      </main>
+      <Footer /> {/* Add the Footer here */}
+    </div>
+  );
+};
+
+export default PublicLayout;
