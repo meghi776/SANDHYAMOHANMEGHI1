@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2, User, LogIn } from 'lucide-react'; // Import User and LogIn icons
+import { ArrowLeft, Trash2, User, LogIn, Eye } from 'lucide-react'; // Import Eye icon
 import { useSession } from '@/contexts/SessionContext'; // Import useSession
 import { showError } from '@/utils/toast'; // Import showError
+import { useDemoOrderModal } from '@/contexts/DemoOrderModalContext'; // Import useDemoOrderModal
 
 interface DesignElement {
   id: string;
@@ -28,16 +29,31 @@ interface DesignerPageHeaderProps {
 
 const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selectedElement, onDeleteElement }) => {
   const navigate = useNavigate();
-  const { user, loading: sessionLoading } = useSession(); // Use useSession hook
+  const { user, loading: sessionLoading } = useSession();
+  const { setIsDemoOrderModalOpen, setDemoOrderDetails } = useDemoOrderModal(); // Use useDemoOrderModal
 
   const handleBackClick = () => {
-    navigate(-1); // Go back to the previous page in history
+    navigate(-1);
   };
 
   const handleDeleteClick = () => {
     if (selectedElement) {
       onDeleteElement(selectedElement.id);
     }
+  };
+
+  const handlePreviewClick = () => {
+    if (sessionLoading) {
+      showError("Session is still loading. Please wait a moment.");
+      return;
+    }
+    if (!user) {
+      showError("Please log in to place a demo order.");
+      navigate('/login');
+      return;
+    }
+    setDemoOrderDetails('Demo User', '0.00', 'Preview Address'); 
+    setIsDemoOrderModalOpen(true);
   };
 
   const showDeleteButton = selectedElement && selectedElement.type === 'image';
@@ -56,12 +72,6 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
               My Account
             </Button>
           </Link>
-          {/* Optionally add admin button if user is admin and you want it here */}
-          {/* {user.user_metadata?.role === 'admin' && (
-            <Link to="/admin">
-              <Button variant="ghost" size="sm">Admin</Button>
-            </Link>
-          )} */}
         </>
       );
     } else {
@@ -90,6 +100,9 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
             <Trash2 className="h-5 w-5" />
           </Button>
         )}
+        <Button variant="ghost" size="sm" onClick={handlePreviewClick}>
+          <Eye className="h-5 w-5" />
+        </Button>
         {renderAuthButtons()}
       </div>
     </div>
