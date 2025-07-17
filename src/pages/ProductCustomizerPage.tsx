@@ -22,6 +22,8 @@ import {
   Save,
   FolderOpen,
   Wand2,
+  Undo, // Import Undo icon
+  Redo, // Import Redo icon
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -69,6 +71,12 @@ interface DesignElement {
   fontFamily?: string;
   textShadow?: boolean;
   rotation?: number;
+}
+
+interface DesignState {
+  elements: DesignElement[];
+  canvasColor: string | null;
+  blurredBgUrl: string | null;
 }
 
 interface TouchState {
@@ -168,6 +176,51 @@ const ProductCustomizerPage = () => {
 
   const [isSavedDesignsModalOpen, setIsSavedDesignsModalOpen] = useState(false);
 
+  // Undo/Redo History State
+  const [designHistory, setDesignHistory] = useState<DesignState[]>([]);
+  const [historyPointer, setHistoryPointer] = useState(-1);
+
+  const pushToHistory = useCallback((elements: DesignElement[], canvasColor: string | null, blurredBgUrl: string | null) => {
+    setDesignHistory(prevHistory => {
+      const newHistory = prevHistory.slice(0, historyPointer + 1);
+      const newState = { elements: JSON.parse(JSON.stringify(elements)), canvasColor, blurredBgUrl }; // Deep copy
+      newHistory.push(newState);
+      return newHistory;
+    });
+    setHistoryPointer(prevPointer => prevPointer + 1);
+  }, [historyPointer]);
+
+  const undo = useCallback(() => {
+    if (historyPointer > 0) {
+      const prevState = designHistory[historyPointer - 1];
+      setDesignElements(prevState.elements);
+      setSelectedCanvasColor(prevState.canvasColor);
+      setBlurredBackgroundImageUrl(prevState.blurredBgUrl);
+      setHistoryPointer(prevPointer => prevPointer - 1);
+    }
+  }, [designHistory, historyPointer]);
+
+  const redo = useCallback(() => {
+    if (historyPointer < designHistory.length - 1) {
+      const nextState = designHistory[historyPointer + 1];
+      setDesignElements(nextState.elements);
+      setSelectedCanvasColor(nextState.canvasColor);
+      setBlurredBackgroundImageUrl(nextState.blurredBgUrl);
+      setHistoryPointer(prevPointer => prevPointer + 1);
+    }
+  }, [designHistory, historyPointer]);
+
+  const canUndo = historyPointer > 0;
+  const canRedo = historyPointer < designHistory.length - 1;
+
+  useEffect(() => {
+    // Initialize history with the initial state after product loads
+    if (!loading && product && historyPointer === -1) {
+      pushToHistory(designElements, selectedCanvasColor, blurredBackgroundImageUrl);
+    }
+  }, [loading, product, designElements, selectedCanvasColor, blurredBackgroundImageUrl, historyPointer, pushToHistory]);
+
+
   useEffect(() => {
     const updateCanvasDimensions = () => {
       if (canvasContentRef.current && product) {
@@ -200,6 +253,9 @@ const ProductCustomizerPage = () => {
     setDesignElements(design.elements);
     setSelectedCanvasColor(design.color);
     setBlurredBackgroundImageUrl(design.blurredBg);
+    // After loading, push this state to history and reset pointer
+    setDesignHistory([{ elements: JSON.parse(JSON.stringify(design.elements)), canvasColor: design.color, blurredBgUrl: design.blurredBg }]);
+    setHistoryPointer(0);
   }, []);
 
   useEffect(() => {
@@ -253,18 +309,22 @@ const ProductCustomizerPage = () => {
           sku: productData.sku,
         });
 
+        let initialElements: DesignElement[] = [];
         try {
           if (mockup?.design_data) {
-            const loadedElements: DesignElement[] = JSON.parse(mockup.design_data as string).map((el: any) => ({
+            initialElements = JSON.parse(mockup.design_data as string).map((el: any) => ({
               ...el,
               width: el.width || (el.type === 'text' ? 200 : productData.canvas_width || 300),
               height: el.height || (el.type === 'text' ? 40 : productData.canvas_height || 600),
             }));
-            setDesignElements(loadedElements);
           }
         } catch (parseError) {
           console.error("Error parsing database design data:", parseError);
         }
+        setDesignElements(initialElements);
+        setDesignHistory([{ elements: initialElements, canvasColor: selectedCanvasColor, blurredBgUrl: blurredBackgroundImageUrl }]);
+        setHistoryPointer(0);
+
         setDemoOrderDetails('Demo User', productData.price?.toFixed(2) || '0.00', 'Demo Address, Demo City, Demo State, 00000');
       }
       setLoading(false);
@@ -333,10 +393,12 @@ const ProductCustomizerPage = () => {
   }, [designElements, selectedElementId]);
 
   const updateElement = useCallback((id: string, updates: Partial<DesignElement>) => {
-    setDesignElements(prev =>
-      prev.map(el => (el.id === id ? { ...el, ...updates } : el))
-    );
-  }, []);
+    setDesignElements(prev => {
+      const newElements = prev.map(el => (el.id === id ? { ...el, ...updates } : el));
+      pushToHistory(newElements, selectedCanvasColor, blurredBackgroundImageUrl);
+      return newElements;
+    });
+  }, [pushToHistory, selectedCanvasColor, blurredBackgroundImageUrl]);
 
   const deleteElement = async (id: string) => { // Made async to handle Supabase deletion
     setDesignElements(prev => {
@@ -344,7 +406,7 @@ const ProductCustomizerPage = () => {
       if (elementToDelete) {
         // Revoke blob URL if it's a temporary local image
         if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('blob:')) {
-          URL.revokeObjectURL(el.value);
+          URL.revokeObjectURL(elementToDelete.value);
         }
         // If it's an uploaded image, attempt to delete from Supabase storage
         if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('https://')) {
@@ -368,7 +430,9 @@ const ProductCustomizerPage = () => {
           }
         }
       }
-      return prev.filter(el => el.id !== id);
+      const newElements = prev.filter(el => el.id !== id);
+      pushToHistory(newElements, selectedCanvasColor, blurredBackgroundImageUrl);
+      return newElements;
     });
     if (selectedElementId === id) {
       setSelectedElementId(null);
@@ -394,17 +458,24 @@ const ProductCustomizerPage = () => {
     const offsetX = unscaledClientX - element.x;
     const offsetY = unscaledClientY - element.y;
 
+    let hasMoved = false; // Track if movement occurred
+
     const onMouseMove = (moveEvent: MouseEvent) => {
       const { x: currentUnscaledX, y: currentUnscaledY } = getUnscaledCoords(moveEvent.clientX, moveEvent.clientY);
       let newX = currentUnscaledX - offsetX;
       let newY = currentUnscaledY - offsetY;
 
       updateElement(id, { x: newX, y: newY });
+      hasMoved = true;
     };
 
     const onMouseUp = () => {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
+      if (hasMoved) {
+        // Push to history only if the element was actually moved
+        pushToHistory(designElements, selectedCanvasColor, blurredBackgroundImageUrl);
+      }
     };
 
     document.addEventListener('mousemove', onMouseMove);
@@ -528,6 +599,8 @@ const ProductCustomizerPage = () => {
       initialElementY: 0,
       activeElementId: null,
     };
+    // Always push to history after a touch interaction ends, as it implies a change
+    pushToHistory(designElements, selectedCanvasColor, blurredBackgroundImageUrl);
   };
 
   const handleResizeMouseDown = (e: React.MouseEvent, id: string, handle: 'br') => {
@@ -656,6 +729,7 @@ const ProductCustomizerPage = () => {
     document.removeEventListener('mouseup', onResizeMouseUp);
     resizeState.current.mode = 'none';
     resizeState.current.activeElementId = null;
+    pushToHistory(designElements, selectedCanvasColor, blurredBackgroundImageUrl); // Push to history after resize
   };
 
   const onResizeTouchEnd = () => {
@@ -663,19 +737,22 @@ const ProductCustomizerPage = () => {
     document.removeEventListener('touchend', onResizeTouchEnd);
     resizeState.current.mode = 'none';
     resizeState.current.activeElementId = null;
+    pushToHistory(designElements, selectedCanvasColor, blurredBackgroundImageUrl); // Push to history after resize
   };
 
   const handleRotateElement = (id: string, direction: 'left' | 'right') => {
-    setDesignElements(prev =>
-      prev.map(el => {
+    setDesignElements(prev => {
+      const newElements = prev.map(el => {
         if (el.id === id) {
           const currentRotation = el.rotation || 0;
           const newRotation = (direction === 'right' ? currentRotation + 5 : currentRotation - 5) % 360;
           return { ...el, rotation: newRotation };
         }
         return el;
-      })
-    );
+      });
+      pushToHistory(newElements, selectedCanvasColor, blurredBackgroundImageUrl); // Push to history after rotation
+      return newElements;
+    });
   };
 
   const captureDesignForOrder = async () => {
@@ -940,12 +1017,13 @@ const ProductCustomizerPage = () => {
       const blurredDataUrl = canvas.toDataURL('image/png');
       setBlurredBackgroundImageUrl(blurredDataUrl);
       setSelectedCanvasColor(null);
+      pushToHistory(designElements, null, blurredDataUrl); // Push to history
     };
 
     img.onerror = (e) => {
       console.error("Error loading image for blur:", e);
     };
-  }, [designElements, product]);
+  }, [designElements, product, pushToHistory]);
 
   const processAndUploadImage = async (file: File | Blob) => {
     if (!product) {
@@ -998,10 +1076,14 @@ const ProductCustomizerPage = () => {
         rotation: 0,
       };
   
-      setDesignElements(prev => [
-        ...prev.filter(el => el.type !== 'image'),
-        newElement
-      ]);
+      setDesignElements(prev => {
+        const updatedElements = [
+          ...prev.filter(el => el.type !== 'image'),
+          newElement
+        ];
+        pushToHistory(updatedElements, selectedCanvasColor, blurredBackgroundImageUrl); // Push to history
+        return updatedElements;
+      });
       setSelectedElementId(newElement.id);
 
       const compressionOptions = {
@@ -1023,11 +1105,13 @@ const ProductCustomizerPage = () => {
       uploadFileToSupabase(compressedFile, 'order-mockups', 'user-uploads')
         .then(uploadedUrl => {
           if (uploadedUrl) {
-            setDesignElements(prev =>
-              prev.map(el =>
+            setDesignElements(prev => {
+              const updatedElements = prev.map(el =>
                 el.id === newElementId ? { ...el, value: uploadedUrl } : el
-              )
-            );
+              );
+              pushToHistory(updatedElements, selectedCanvasColor, blurredBackgroundImageUrl); // Push to history
+              return updatedElements;
+            });
             URL.revokeObjectURL(tempUrl);
 
             if (shouldApplyBlur) {
@@ -1035,16 +1119,25 @@ const ProductCustomizerPage = () => {
             } else {
               setBlurredBackgroundImageUrl(null);
               setSelectedCanvasColor(null);
+              pushToHistory(designElements, null, null); // Push to history
             }
 
           } else {
-            setDesignElements(prev => prev.filter(el => el.id !== newElementId));
+            setDesignElements(prev => {
+              const updatedElements = prev.filter(el => el.id !== newElementId);
+              pushToHistory(updatedElements, selectedCanvasColor, blurredBackgroundImageUrl); // Push to history
+              return updatedElements;
+            });
             URL.revokeObjectURL(tempUrl);
           }
         })
         .catch(err => {
           console.error("Error during background image upload:", err);
-          setDesignElements(prev => prev.filter(el => el.id !== newElementId));
+          setDesignElements(prev => {
+            const updatedElements = prev.filter(el => el.id !== newElementId);
+            pushToHistory(updatedElements, selectedCanvasColor, blurredBackgroundImageUrl); // Push to history
+            return updatedElements;
+          });
           URL.revokeObjectURL(tempUrl);
         })
         .finally(() => {
@@ -1135,7 +1228,11 @@ const ProductCustomizerPage = () => {
       textShadow: defaultTextShadow,
       rotation: 0,
     };
-    setDesignElements(prev => [...prev, newElement]);
+    setDesignElements(prev => {
+      const newElements = [...prev, newElement];
+      pushToHistory(newElements, selectedCanvasColor, blurredBackgroundImageUrl); // Push to history
+      return newElements;
+    });
     setSelectedElementId(newElement.id);
   };
 
@@ -1161,21 +1258,32 @@ const ProductCustomizerPage = () => {
     }
 
     const newText = target.innerText;
-    updateElement(id, { value: newText });
+    // Update element immediately for smooth typing, history push on blur/mouseup
+    setDesignElements(prev =>
+      prev.map(el => (el.id === id ? { ...el, value: newText } : el))
+    );
+  };
+
+  const handleTextBlur = () => {
+    // Push to history when text editing is finished (on blur)
+    pushToHistory(designElements, selectedCanvasColor, blurredBackgroundImageUrl);
   };
 
   const handleClearBlur = () => {
     setBlurredBackgroundImageUrl(null);
+    pushToHistory(designElements, selectedCanvasColor, null); // Push to history
   };
 
   const handleSelectCanvasColor = (color: string) => {
     setSelectedCanvasColor(color);
     setBlurredBackgroundImageUrl(null);
+    pushToHistory(designElements, color, null); // Push to history
   };
 
   const handleClearBackground = () => {
     setSelectedCanvasColor(null);
     setBlurredBackgroundImageUrl(null);
+    pushToHistory(designElements, null, null); // Push to history
   };
 
   const isBuyNowDisabled = loading || isPlacingOrder || (product && product.inventory !== null && product.inventory <= 0) || designElements.filter(el => el.type === 'image').length === 0 || designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
@@ -1188,6 +1296,10 @@ const ProductCustomizerPage = () => {
         title={product?.name || "Customize Cover"}
         selectedElement={currentSelectedElement}
         onDeleteElement={deleteElement}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
       
       {/* This div now acts as the main scrollable content area */}
@@ -1259,8 +1371,7 @@ const ProductCustomizerPage = () => {
                           }}
                           contentEditable={selectedElementId === el.id}
                           onInput={(e) => handleTextContentInput(e, el.id)}
-                          onBlur={() => {
-                          }}
+                          onBlur={handleTextBlur} // Push to history on blur
                           suppressContentEditableWarning={true}
                           className="outline-none w-full h-full flex items-center justify-center"
                           style={{
@@ -1430,7 +1541,7 @@ const ProductCustomizerPage = () => {
               {blurredBackgroundImageUrl && (
                 <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={handleClearBlur}>
                   <XCircle className="h-5 w-5" />
-                  <span className="text-xs">Delete Blur</span> {/* Changed text here */}
+                  <span className="text-xs">Delete Blur</span>
                 </Button>
               )}
               <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={handleClearBackground}>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2, User, LogIn, Eye } from 'lucide-react';
+import { ArrowLeft, Trash2, User, LogIn, Eye, Undo, Redo } from 'lucide-react'; // Import Undo and Redo icons
 import { useSession } from '@/contexts/SessionContext';
 import { showError } from '@/utils/toast';
 import { useDemoOrderModal } from '@/contexts/DemoOrderModalContext';
@@ -25,9 +25,13 @@ interface DesignerPageHeaderProps {
   title: string;
   selectedElement: DesignElement | null;
   onDeleteElement: (id: string) => void;
+  onUndo: () => void; // New prop for undo action
+  onRedo: () => void; // New prop for redo action
+  canUndo: boolean; // New prop to enable/disable undo
+  canRedo: boolean; // New prop to enable/disable redo
 }
 
-const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selectedElement, onDeleteElement }) => {
+const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selectedElement, onDeleteElement, onUndo, onRedo, canUndo, canRedo }) => {
   const navigate = useNavigate();
   const { user, loading: sessionLoading } = useSession();
   const { setIsDemoOrderModalOpen, setDemoOrderDetails } = useDemoOrderModal();
@@ -97,6 +101,12 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
             <Trash2 className="h-5 w-5" />
           </Button>
         )}
+        <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo} title="Undo">
+          <Undo className="h-5 w-5" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo} title="Redo">
+          <Redo className="h-5 w-5" />
+        </Button>
         <Button variant="ghost" size="sm" onClick={handlePreviewClick} className="flex-shrink-0">
           <Eye className="h-5 w-5" />
         </Button>
