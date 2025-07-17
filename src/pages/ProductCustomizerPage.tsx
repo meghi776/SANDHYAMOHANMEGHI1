@@ -469,7 +469,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -1508,7 +1508,7 @@ const ProductCustomizerPage = () => {
         isSavedDesignsModalOpen={isSavedDesignsModalOpen}
         setIsSavedDesignsModalOpen={setIsSavedDesignsModalOpen}
         currentDesignElements={designElements}
-        currentSelectedCanvasColor={currentSelectedCanvasColor}
+        currentSelectedCanvasColor={selectedCanvasColor}
         currentBlurredBackgroundImageUrl={blurredBackgroundImageUrl}
         onLoadDesign={loadDesign}
         canvasContentRef={canvasContentRef}
