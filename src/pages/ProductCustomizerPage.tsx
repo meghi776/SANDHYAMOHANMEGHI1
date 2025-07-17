@@ -1285,7 +1285,7 @@ const ProductCustomizerPage = () => {
                             fontFamily: el.fontFamily,
                             textShadow: el.textShadow ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none',
                             wordBreak: 'break-word',
-                            overflow: 'hidden',
+                            // Removed overflow: 'hidden' to prevent text from being cut off
                           }}
                         >
                           {el.value}
@@ -1507,10 +1507,10 @@ const ProductCustomizerPage = () => {
         setDemoOrderDetails={setDemoOrderDetails}
         isSavedDesignsModalOpen={isSavedDesignsModalOpen}
         setIsSavedDesignsModalOpen={setIsSavedDesignsModalOpen}
-        currentDesignElements={designElements}
-        currentSelectedCanvasColor={selectedCanvasColor}
+        currentDesignElements={currentDesignElements}
+        currentSelectedCanvasColor={currentSelectedCanvasColor}
         currentBlurredBackgroundImageUrl={blurredBackgroundImageUrl}
-        onLoadDesign={loadDesign}
+        onLoadDesign={onLoadDesign}
         canvasContentRef={canvasContentRef}
         userRole={userRole}
       />
