@@ -1205,7 +1205,7 @@ const ProductCustomizerPage = () => {
   const currentSelectedElement = designElements.find(el => el.id === selectedElementId) || null;
 
   return (
-    <div className="flex flex-col h-full"> {/* Changed min-h-screen to h-full */}
+    <div className="flex flex-col h-full">
       <DesignerPageHeader
         title={product?.name || "Customize Cover"}
         selectedElement={currentSelectedElement}
@@ -1213,7 +1213,7 @@ const ProductCustomizerPage = () => {
       />
       
       {/* This div now acts as the main scrollable content area */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden pt-14 pb-65"> {/* Changed overflow-y-auto to overflow-hidden */}
+      <div className="relative flex-1 flex flex-col md:flex-row overflow-hidden pt-14 pb-65 z-1">
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -1226,7 +1226,7 @@ const ProductCustomizerPage = () => {
         )}
 
         {!loading && !error && product && (
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden"> {/* Changed overflow-y-auto to overflow-hidden */}
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
             <div
               ref={designAreaRef}
               className="flex-1 flex items-center justify-center relative overflow-hidden px-4"

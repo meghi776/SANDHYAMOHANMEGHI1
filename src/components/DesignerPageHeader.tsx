@@ -87,7 +87,7 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
   };
 
   return (
-    <div className="fixed top-0 w-full z-20 bg-white dark:bg-gray-800 shadow-sm py-2 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+    <div className="fixed top-0 w-full z-50 bg-white dark:bg-gray-800 shadow-sm py-2 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
       <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4">
         <ArrowLeft className="h-5 w-5" />
       </Button>
