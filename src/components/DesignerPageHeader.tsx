@@ -91,9 +91,7 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
       <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4 flex-shrink-0">
         <ArrowLeft className="h-5 w-5" />
       </Button>
-      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex-grow text-center truncate">
-        {title}
-      </h2>
+      {/* Removed the h2 element that displayed the product title */}
       <div className="flex items-center space-x-2 flex-shrink-0">
         {showDeleteButton && (
           <Button variant="destructive" size="icon" onClick={handleDeleteClick} title="Delete Selected Image">
