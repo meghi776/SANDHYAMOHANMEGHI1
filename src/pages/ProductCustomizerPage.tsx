@@ -469,7 +469,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -524,7 +524,7 @@ const ProductCustomizerPage = () => {
       startY: unscaledClientY,
       initialWidth: element.width,
       initialHeight: element.height,
-      initialFontSize: element.fontSize || 35,
+      initialFontSize: element.type === 'text' ? (element.fontSize || 35) : 0, // Capture font size for text
       activeElementId: id,
     };
 
@@ -548,7 +548,7 @@ const ProductCustomizerPage = () => {
       startY: unscaledClientY,
       initialWidth: element.width,
       initialHeight: element.height,
-      initialFontSize: element.fontSize || 35,
+      initialFontSize: element.type === 'text' ? (element.fontSize || 35) : 0, // Capture font size for text
       activeElementId: id,
     };
 
@@ -573,20 +573,25 @@ const ProductCustomizerPage = () => {
     let newFontSize = initialFontSize;
 
     if (handle === 'br') {
-      newWidth = Math.max(20, initialWidth + deltaX);
-      newHeight = Math.max(20, initialHeight + deltaY);
-
-      if (initialHeight > 0) {
-        const heightScaleFactor = newHeight / initialHeight;
-        newFontSize = Math.max(10, Math.min(100, initialFontSize * heightScaleFactor));
+      if (element.type === 'text') {
+        // For text, adjust width and font size
+        newWidth = Math.max(20, initialWidth + deltaX);
+        // Adjust font size based on vertical drag
+        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5)); // Adjust multiplier as needed
+        
+        updateElement(activeElementId, {
+          width: newWidth,
+          fontSize: newFontSize,
+        });
+      } else { // For image elements
+        newWidth = Math.max(20, initialWidth + deltaX);
+        newHeight = Math.max(20, initialHeight + deltaY);
+        updateElement(activeElementId, {
+          width: newWidth,
+          height: newHeight,
+        });
       }
     }
-
-    updateElement(activeElementId, {
-      width: newWidth,
-      height: newHeight,
-      fontSize: newFontSize,
-    });
   };
 
   const onResizeTouchMove = (moveEvent: TouchEvent) => {
@@ -608,20 +613,25 @@ const ProductCustomizerPage = () => {
     let newFontSize = initialFontSize;
 
     if (handle === 'br') {
-      newWidth = Math.max(20, initialWidth + deltaX);
-      newHeight = Math.max(20, initialHeight + deltaY);
-
-      if (initialHeight > 0) {
-        const heightScaleFactor = newHeight / initialHeight;
-        newFontSize = Math.max(10, Math.min(100, initialFontSize * heightScaleFactor));
+      if (element.type === 'text') {
+        // For text, adjust width and font size
+        newWidth = Math.max(20, initialWidth + deltaX);
+        // Adjust font size based on vertical drag
+        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5)); // Adjust multiplier as needed
+        
+        updateElement(activeElementId, {
+          width: newWidth,
+          fontSize: newFontSize,
+        });
+      } else { // For image elements
+        newWidth = Math.max(20, initialWidth + deltaX);
+        newHeight = Math.max(20, initialHeight + deltaY);
+        updateElement(activeElementId, {
+          width: newWidth,
+          height: newHeight,
+        });
       }
     }
-
-    updateElement(activeElementId, {
-      width: newWidth,
-      height: newHeight,
-      fontSize: newFontSize,
-    });
   };
 
   const onResizeMouseUp = () => {
@@ -1257,7 +1267,7 @@ const ProductCustomizerPage = () => {
                       transform: `rotate(${el.rotation || 0}deg)`,
                       transformOrigin: 'center center',
                       width: `${el.width * scaleFactor}px`,
-                      height: `${el.height * scaleFactor}px`,
+                      height: el.type === 'text' ? 'auto' : `${el.height * scaleFactor}px`, // Changed height to 'auto' for text elements
                       zIndex: 5,
                       touchAction: 'none',
                     }}
@@ -1285,7 +1295,7 @@ const ProductCustomizerPage = () => {
                             fontFamily: el.fontFamily,
                             textShadow: el.textShadow ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none',
                             wordBreak: 'break-word',
-                            // Removed overflow: 'hidden' to prevent text from being cut off
+                            minHeight: `${(el.fontSize || 35) * scaleFactor * 1.2}px`, // Ensure minimum height for interaction
                           }}
                         >
                           {el.value}
