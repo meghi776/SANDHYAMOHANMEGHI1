@@ -72,6 +72,9 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontSize: { // Adding custom font sizes
+        'xxs': '0.625rem', // 10px
+      },
       keyframes: {
         "accordion-down": {
           from: {
