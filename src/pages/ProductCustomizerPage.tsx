@@ -192,7 +192,7 @@ const ProductCustomizerPage = () => {
 
   const undo = useCallback(() => {
     if (historyPointer > 0) {
-      const prevState = designHistory[historyPointer - 1]; // Line 196
+      const prevState = designHistory[historyPointer - 1];
       setDesignElements(prevState.elements);
       setSelectedCanvasColor(prevState.canvasColor);
       setBlurredBackgroundImageUrl(prevState.blurredBgUrl);
@@ -213,8 +213,13 @@ const ProductCustomizerPage = () => {
   const canUndo = historyPointer > 0;
   const canRedo = historyPointer < designHistory.length - 1;
 
-  // Removed the problematic useEffect that was causing redundant history initialization.
-  // The history is now initialized solely within the fetchProductAndMockup useEffect.
+  useEffect(() => {
+    // Initialize history with the initial state after product loads
+    if (!loading && product && historyPointer === -1) {
+      pushToHistory(designElements, selectedCanvasColor, blurredBackgroundImageUrl);
+    }
+  }, [loading, product, designElements, selectedCanvasColor, blurredBackgroundImageUrl, historyPointer, pushToHistory]);
+
 
   useEffect(() => {
     const updateCanvasDimensions = () => {
@@ -346,7 +351,7 @@ const ProductCustomizerPage = () => {
           setUserRole(data.role);
         }
       } else {
-          setUserRole(null);
+        setUserRole(null);
       }
     };
     fetchUserRole();
@@ -401,7 +406,7 @@ const ProductCustomizerPage = () => {
       if (elementToDelete) {
         // Revoke blob URL if it's a temporary local image
         if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('blob:')) {
-          URL.revokeObjectURL(el.value);
+          URL.revokeObjectURL(elementToDelete.value);
         }
         // If it's an uploaded image, attempt to delete from Supabase storage
         if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('https://')) {
@@ -556,7 +561,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
