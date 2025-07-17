@@ -1507,10 +1507,10 @@ const ProductCustomizerPage = () => {
         setDemoOrderDetails={setDemoOrderDetails}
         isSavedDesignsModalOpen={isSavedDesignsModalOpen}
         setIsSavedDesignsModalOpen={setIsSavedDesignsModalOpen}
-        currentDesignElements={currentDesignElements}
+        currentDesignElements={designElements}
         currentSelectedCanvasColor={currentSelectedCanvasColor}
         currentBlurredBackgroundImageUrl={blurredBackgroundImageUrl}
-        onLoadDesign={onLoadDesign}
+        onLoadDesign={loadDesign}
         canvasContentRef={canvasContentRef}
         userRole={userRole}
       />
