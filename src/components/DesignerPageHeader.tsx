@@ -87,7 +87,7 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
   };
 
   return (
-    <div className="fixed top-0 w-full z-50 bg-white dark:bg-gray-800 shadow-sm py-6 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+    <div className="fixed top-0 w-full z-50 bg-white dark:bg-gray-800 shadow-sm py-6 px-4 flex items-center justify-between relative"> {/* Removed border-b and related classes, added relative */}
       <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4 flex-shrink-0">
         <ArrowLeft className="h-5 w-5" />
       </Button>
@@ -102,6 +102,8 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
         </Button>
         {renderAuthButtons()}
       </div>
+      {/* Animated border */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 animate-color-cycle"></div>
     </div>
   );
 };
