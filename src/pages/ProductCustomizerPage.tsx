@@ -338,11 +338,35 @@ const ProductCustomizerPage = () => {
     );
   }, []);
 
-  const deleteElement = (id: string) => {
+  const deleteElement = async (id: string) => { // Made async to handle Supabase deletion
     setDesignElements(prev => {
       const elementToDelete = prev.find(el => el.id === id);
-      if (elementToDelete && elementToDelete.type === 'image' && elementToDelete.value.startsWith('blob:')) {
-        URL.revokeObjectURL(el.value);
+      if (elementToDelete) {
+        // Revoke blob URL if it's a temporary local image
+        if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('blob:')) {
+          URL.revokeObjectURL(el.value);
+        }
+        // If it's an uploaded image, attempt to delete from Supabase storage
+        if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('https://')) {
+          const url = new URL(elementToDelete.value);
+          // Assuming the bucket is 'order-mockups' and subfolder is 'user-uploads'
+          // This needs to be robust if paths vary
+          const pathSegments = url.pathname.split('/');
+          const bucketName = pathSegments[2]; // e.g., 'order-mockups'
+          const filePath = pathSegments.slice(3).join('/'); // e.g., 'user-uploads/image.png'
+          
+          if (bucketName && filePath) {
+            deleteFileFromSupabase(filePath, bucketName)
+              .then(success => {
+                if (!success) {
+                  console.warn(`Failed to delete image from Supabase storage: ${filePath}`);
+                }
+              })
+              .catch(err => {
+                console.error(`Error deleting image from Supabase storage (${filePath}):`, err);
+              });
+          }
+        }
       }
       return prev.filter(el => el.id !== id);
     });
@@ -466,7 +490,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -1406,7 +1430,7 @@ const ProductCustomizerPage = () => {
               {blurredBackgroundImageUrl && (
                 <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={handleClearBlur}>
                   <XCircle className="h-5 w-5" />
-                  <span className="text-xs">Clear Blur</span>
+                  <span className="text-xs">Delete Blur</span> {/* Changed text here */}
                 </Button>
               )}
               <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={handleClearBackground}>
