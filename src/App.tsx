@@ -17,7 +17,6 @@ import DemoOrderListingPage from "./pages/admin/DemoOrderListingPage";
 import ProductCustomizerPage from "./pages/ProductCustomizerPage";
 import OrderHistoryPage from "./pages/OrderHistoryPage";
 import PublicLayout from "./components/PublicLayout";
-import NoFooterLayout from "./components/NoFooterLayout"; // Import the new layout
 import NotFound from "./pages/NotFound";
 import { DemoOrderModalProvider } from "./contexts/DemoOrderModalContext";
 import DemoUsersWithOrdersPage from "./pages/admin/DemoUsersWithOrdersPage";
@@ -27,7 +26,7 @@ import AllProductsManagementPage from "./pages/admin/AllProductsManagementPage";
 import ProcessedOrdersByUserPage from "./pages/admin/ProcessedOrdersByUserPage";
 import AllProcessingOrdersPage from "./pages/admin/AllProcessingOrdersPage";
 import ShippedOrdersPage from "./pages/admin/ShippedOrdersPage";
-import DeliveredOrdersPage from "./pages/DeliveredOrdersPage"; // Corrected import path for DeliveredOrdersPage
+import DeliveredOrdersPage from "./pages/admin/DeliveredOrdersPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CancellationRefundPage from "./pages/CancellationRefundPage";
@@ -60,6 +59,7 @@ function AppContent() {
             <Route path="/login" element={<Login />} />
             <Route path="/categories/:categoryId/brands" element={<BrandsPage />} />
             <Route path="/categories/:categoryId/brands/:brandId/products" element={<ProductListingPage />} />
+            <Route path="/customize-cover/:productId" element={<ProductCustomizerPage />} />
             <Route path="/orders" element={<OrderHistoryPage />} />
             <Route path="/order-success" element={<OrderSuccessPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
@@ -67,11 +67,6 @@ function AppContent() {
             <Route path="/cancellation-refund" element={<CancellationRefundPage />} />
             <Route path="/shipping-delivery" element={<ShippingDeliveryPage />} />
             <Route path="/contact-us" element={<ContactUsPage />} />
-          </Route>
-
-          {/* Route for ProductCustomizerPage using NoFooterLayout */}
-          <Route path="/customize-cover/:productId" element={<NoFooterLayout />}>
-            <Route index element={<ProductCustomizerPage />} />
           </Route>
 
           {/* Admin Routes */}
