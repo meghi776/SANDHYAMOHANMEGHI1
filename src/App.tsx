@@ -32,9 +32,6 @@ import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CancellationRefundPage from "./pages/CancellationRefundPage";
 import ShippingDeliveryPage from "./pages/ShippingDeliveryPage";
 import ContactUsPage from "./pages/ContactUsPage";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Import QueryClient and QueryClientProvider
-
-const queryClient = new QueryClient(); // Create a new QueryClient instance
 
 function App() {
   return (
@@ -42,9 +39,7 @@ function App() {
       <Toaster />
       <Router>
         {/* Move useNavigate and useLocation inside Router context */}
-        <QueryClientProvider client={queryClient}> {/* Wrap with QueryClientProvider */}
-          <AppContent />
-        </QueryClientProvider>
+        <AppContent />
       </Router>
     </>
   );

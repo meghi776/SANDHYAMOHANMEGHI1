@@ -1,50 +1,62 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Share2, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Trash2 } from 'lucide-react'; // Removed Share2 icon
 
-interface DesignerPageHeaderProps {
-  onSave: () => void;
-  onShare: () => void;
-  onDownload: () => void;
+interface DesignElement {
+  id: string;
+  type: 'text' | 'image';
+  value: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize?: number;
+  color?: string;
+  fontFamily?: string;
+  textShadow?: boolean;
+  rotation?: number;
 }
 
-const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ onSave, onShare, onDownload }) => {
+interface DesignerPageHeaderProps {
+  title: string;
+  selectedElement: DesignElement | null;
+  onDeleteElement: (id: string) => void;
+  // Removed onShareDesign prop
+}
+
+const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selectedElement, onDeleteElement }) => { // Removed onShareDesign from destructuring
   const navigate = useNavigate();
 
   const handleBackClick = () => {
-    navigate(-1); // Go back to the previous page
+    navigate(-1); // Go back to the previous page in history
   };
 
+  const handleDeleteClick = () => {
+    if (selectedElement) {
+      onDeleteElement(selectedElement.id);
+    }
+  };
+
+  const showDeleteButton = selectedElement && selectedElement.type === 'image';
+
   return (
-    <div className="sticky top-0 z-20 w-full bg-white dark:bg-gray-800 shadow-sm py-1 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+    <div className="sticky top-0 z-20 w-full bg-white dark:bg-gray-800 shadow-sm py-2 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
       <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4">
         <ArrowLeft className="h-5 w-5" />
       </Button>
-      <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex-grow text-center">
-        Design Your Product
-      </h1>
-      <div className="flex items-center space-x-2 ml-4">
-        <Button variant="ghost" size="icon" onClick={onSave}>
-          <Save className="h-5 w-5" />
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Share2 className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onShare}>Share Design</DropdownMenuItem>
-            <DropdownMenuItem onClick={onDownload}>Download Image</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 flex-grow text-center">
+        {title}
+      </h2>
+      <div className="flex items-center space-x-2">
+        {/* Removed Share2 button */}
+        {showDeleteButton && (
+          <Button variant="destructive" size="icon" onClick={handleDeleteClick} title="Delete Selected Image">
+            <Trash2 className="h-5 w-5" />
+          </Button>
+        )}
+        {/* Spacer to balance the layout if delete button is not shown */}
+        {!showDeleteButton && <div className="w-10"></div>} 
       </div>
     </div>
   );
