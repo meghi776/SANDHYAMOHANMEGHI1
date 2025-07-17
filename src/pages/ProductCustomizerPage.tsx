@@ -29,7 +29,6 @@ import { useSession } from '@/contexts/SessionContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { proxyImageUrl } from '@/utils/imageProxy';
-// Removed: import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
 import { useDemoOrderModal } from '@/contexts/DemoOrderModalContext';
 import { uploadFileToSupabase, deleteFileFromSupabase } from '@/utils/supabaseStorage';
 import CustomizerModals from '@/components/customizer/CustomizerModals';
@@ -217,7 +216,6 @@ const ProductCustomizerPage = () => {
 
       if (productError) {
         console.error("Error fetching product:", productError);
-        // Removed: showError("Failed to load product details.");
         setError(productError.message);
       } else if (productData) {
         console.log("Fetched productData:", productData);
@@ -266,7 +264,6 @@ const ProductCustomizerPage = () => {
           }
         } catch (parseError) {
           console.error("Error parsing database design data:", parseError);
-          // Removed: showError("Failed to load default design data. It might be corrupted.");
         }
         setDemoOrderDetails('Demo User', productData.price?.toFixed(2) || '0.00', 'Demo Address, Demo City, Demo State, 00000');
       }
@@ -469,7 +466,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -659,7 +656,6 @@ const ProductCustomizerPage = () => {
 
   const captureDesignForOrder = async () => {
     if (!canvasContentRef.current || !product) {
-      // Removed: showError("Design area or product data not found.");
       return null;
     }
 
@@ -725,11 +721,6 @@ const ProductCustomizerPage = () => {
       if (err.stack) {
         console.error("Error stack:", err.stack);
       }
-      // Removed: if (err.message && err.message.includes("Tainted canvases may not be exported")) {
-      // Removed:   showError("Capture Failed: The design contains images from another domain that are not configured for CORS. Please ensure Supabase Storage CORS settings are correct (Allowed Origins: *, Allowed Methods: GET).");
-      // Removed: } else {
-      // Removed:   showError(`Capture Failed: ${err.message || "An unexpected error occurred while generating image."}`);
-      // Removed: }
       return null;
     } finally {
       if (mockupImageElement instanceof HTMLElement) {
@@ -746,19 +737,16 @@ const ProductCustomizerPage = () => {
 
   const handlePlaceOrder = useCallback(async (isDemo: boolean, paymentId: string | undefined = undefined) => {
     if (!product || !user?.id) {
-      // Removed: showError("Product or user information missing.");
       return;
     }
 
     const hasImageElement = designElements.some(el => el.type === 'image');
     if (!hasImageElement) {
-      // Removed: showError("Please add at least one image to your design before placing an order.");
       return;
     }
 
     const imagesStillUploading = designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
     if (imagesStillUploading) {
-      // Removed: showError("Please wait for all images to finish uploading before placing your order.");
       return;
     }
 
@@ -771,16 +759,13 @@ const ProductCustomizerPage = () => {
     const finalOrderType = isDemo ? 'demo' : 'normal';
 
     if (!isDemo && (!finalCustomerName.trim() || !finalCustomerAddress.trim() || !finalCustomerPhone.trim())) {
-      // Removed: showError("Please fill in all customer details.");
       return;
     }
     if (isDemo && (!finalCustomerName.trim() || !finalCustomerAddress.trim() || isNaN(finalTotalPrice))) {
-      // Removed: showError("Please provide a valid name, price, and address for the demo order.");
       return;
     }
 
     setIsPlacingOrder(true);
-    // Removed: const toastId = showLoading(isDemo ? "Placing demo order..." : "Placing your order...");
     let orderedDesignImageUrl: string | null = null;
     
     try {
@@ -883,7 +868,6 @@ const ProductCustomizerPage = () => {
       setIsCheckoutModalOpen(false);
       setIsDemoOrderModalOpen(false);
       
-      // Removed: showSuccess(isDemo ? "Demo order placed successfully!" : "Order placed successfully!");
       navigate('/order-success');
 
     } catch (err: any) {
@@ -892,10 +876,8 @@ const ProductCustomizerPage = () => {
       if (err.message && err.message.includes("Failed to update inventory:") && err.message.includes("Not enough stock available.")) {
         displayErrorMessage = "Failed to place order: Not enough stock available.";
       }
-      // Removed: showError(displayErrorMessage);
     } finally {
       setIsPlacingOrder(false);
-      // Removed: dismissToast(toastId);
     }
   }, [product, user, customerName, customerAddress, customerPhone, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
 
@@ -905,15 +887,11 @@ const ProductCustomizerPage = () => {
       : designElements.find(el => el.type === 'image');
 
     if (!imageToBlur) {
-      // Removed: showError("Please add an image to the canvas first to use as a blurred background.");
       return;
     }
     if (!product) {
-      // Removed: showError("Product data not loaded. Cannot apply blur.");
       return;
     }
-
-    // Removed: const toastId = showLoading("Applying blur effect...");
 
     const img = new window.Image();
     img.crossOrigin = 'Anonymous';
@@ -924,8 +902,6 @@ const ProductCustomizerPage = () => {
       const ctx = canvas.getContext('2d');
 
       if (!ctx) {
-        // Removed: showError("Failed to get canvas context.");
-        // Removed: dismissToast(toastId);
         return;
       }
 
@@ -940,20 +916,15 @@ const ProductCustomizerPage = () => {
       const blurredDataUrl = canvas.toDataURL('image/png');
       setBlurredBackgroundImageUrl(blurredDataUrl);
       setSelectedCanvasColor(null);
-      // Removed: showSuccess("Blur effect applied!");
-      // Removed: dismissToast(toastId);
     };
 
     img.onerror = (e) => {
       console.error("Error loading image for blur:", e);
-      // Removed: showError("Failed to load image for blur effect. Ensure image is accessible and CORS is configured.");
-      // Removed: dismissToast(toastId);
     };
   }, [designElements, product]);
 
   const processAndUploadImage = async (file: File | Blob) => {
     if (!product) {
-      // Removed: showError("Product data not loaded. Cannot add image.");
       return;
     }
   
@@ -1019,14 +990,10 @@ const ProductCustomizerPage = () => {
       let compressedFile = file;
       try {
         if (file.size > compressionOptions.maxSizeMB * 1024 * 1024 || originalWidth > compressionOptions.maxWidthOrHeight || originalHeight > compressionOptions.maxWidthOrHeight) {
-          // Removed: showLoading("Compressing image...");
           compressedFile = await imageCompression(file, compressionOptions);
-          // Removed: dismissToast();
-          // Removed: showSuccess("Image compressed successfully!");
         }
       } catch (compressionError) {
         console.error("Image compression failed:", compressionError);
-        // Removed: showError("Image compression failed. Uploading original image.");
       }
   
       uploadFileToSupabase(compressedFile, 'order-mockups', 'user-uploads')
@@ -1038,7 +1005,6 @@ const ProductCustomizerPage = () => {
               )
             );
             URL.revokeObjectURL(tempUrl);
-            // Removed: showSuccess("Image uploaded successfully!");
 
             if (shouldApplyBlur) {
               handleBlurBackground(uploadedUrl);
@@ -1050,14 +1016,12 @@ const ProductCustomizerPage = () => {
           } else {
             setDesignElements(prev => prev.filter(el => el.id !== newElementId));
             URL.revokeObjectURL(tempUrl);
-            // Removed: showError("Failed to upload image. Please try again.");
           }
         })
         .catch(err => {
           console.error("Error during background image upload:", err);
           setDesignElements(prev => prev.filter(el => el.id !== newElementId));
           URL.revokeObjectURL(tempUrl);
-          // Removed: showError(`An error occurred during upload: ${err.message}`);
         })
         .finally(() => {
           if (fileInputRef.current) {
@@ -1067,9 +1031,15 @@ const ProductCustomizerPage = () => {
     };
   
     img.onerror = () => {
-      // Removed: showError("Failed to load selected image for preview.");
       URL.revokeObjectURL(tempUrl);
     };
+  };
+
+  const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await processAndUploadImage(file);
+    }
   };
 
   const handleCapacitorImageSelect = async () => {
@@ -1089,33 +1059,27 @@ const ProductCustomizerPage = () => {
     } catch (error: any) {
       if (error.message !== "User cancelled photos app") {
         console.error('Error selecting image with Capacitor Camera:', error);
-        // Removed: showError('Could not select image.');
       }
     }
   };
 
   const handleBuyNowClick = useCallback(() => {
     if (!user) {
-      // Removed: showError("Please log in to place an order.");
       navigate('/login');
       return;
     }
     if (!product) {
-      // Removed: showError("Product not loaded. Cannot proceed with order.");
       return;
     }
     if (product.inventory !== null && product.inventory <= 0) {
-      // Removed: showError("This product is currently out of stock.");
       return;
     }
     const hasImageElement = designElements.some(el => el.type === 'image');
     if (!hasImageElement) {
-      // Removed: showError("Please add at least one image to your design before placing an order.");
       return;
     }
     const imagesStillUploading = designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
     if (imagesStillUploading) {
-      // Removed: showError("Please wait for all images to finish uploading before placing your order.");
       return;
     }
     setIsCheckoutModalOpen(true);
@@ -1149,7 +1113,6 @@ const ProductCustomizerPage = () => {
     };
     setDesignElements(prev => [...prev, newElement]);
     setSelectedElementId(newElement.id);
-    // Removed: showSuccess("New text element added!");
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -1179,19 +1142,16 @@ const ProductCustomizerPage = () => {
 
   const handleClearBlur = () => {
     setBlurredBackgroundImageUrl(null);
-    // Removed: showSuccess("Blurred background cleared.");
   };
 
   const handleSelectCanvasColor = (color: string) => {
     setSelectedCanvasColor(color);
     setBlurredBackgroundImageUrl(null);
-    // Removed: showSuccess(`Canvas background set to ${color}.`);
   };
 
   const handleClearBackground = () => {
     setSelectedCanvasColor(null);
     setBlurredBackgroundImageUrl(null);
-    // Removed: showSuccess("Canvas background cleared.");
   };
 
   const isBuyNowDisabled = loading || isPlacingOrder || (product && product.inventory !== null && product.inventory <= 0) || designElements.filter(el => el.type === 'image').length === 0 || designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
