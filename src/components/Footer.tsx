@@ -10,11 +10,7 @@ const Footer = () => {
           <p className="text-sm">&copy; {new Date().getFullYear()} All rights reserved.</p>
         </div>
         <nav className="flex flex-wrap justify-center md:justify-end space-x-4 text-sm">
-          <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
-          <Link to="/terms-and-conditions" className="hover:text-white transition-colors">Terms & Conditions</Link>
-          <Link to="/cancellation-refund" className="hover:text-white transition-colors">Cancellation & Refund</Link>
-          <Link to="/shipping-delivery" className="hover:text-white transition-colors">Shipping & Delivery</Link>
-          <Link to="/contact-us" className="hover:text-white transition-colors">Contact Us</Link>
+          {/* Removed navigation links as requested */}
         </nav>
       </div>
     </footer>
