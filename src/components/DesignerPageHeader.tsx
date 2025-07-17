@@ -67,7 +67,7 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
       return (
         <>
           <Link to="/orders">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="flex-shrink-0">
               <User className="mr-1 h-4 w-4" />
               My Account
             </Button>
@@ -77,7 +77,7 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
     } else {
       return (
         <Link to="/login">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="flex-shrink-0">
             <LogIn className="mr-1 h-4 w-4" />
             Login / Register
           </Button>
@@ -88,19 +88,19 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
 
   return (
     <div className="fixed top-0 w-full z-50 bg-white dark:bg-gray-800 shadow-sm py-2 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-      <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4">
+      <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4 flex-shrink-0">
         <ArrowLeft className="h-5 w-5" />
       </Button>
-      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 flex-grow text-center">
+      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex-grow text-center truncate">
         {title}
       </h2>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 flex-shrink-0">
         {showDeleteButton && (
           <Button variant="destructive" size="icon" onClick={handleDeleteClick} title="Delete Selected Image">
             <Trash2 className="h-5 w-5" />
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={handlePreviewClick}>
+        <Button variant="ghost" size="sm" onClick={handlePreviewClick} className="flex-shrink-0">
           <Eye className="h-5 w-5" />
         </Button>
         {renderAuthButtons()}
