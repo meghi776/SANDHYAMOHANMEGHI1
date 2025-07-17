@@ -1,7 +1,9 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2 } from 'lucide-react'; // Removed Share2 icon
+import { ArrowLeft, Trash2, User, LogIn } from 'lucide-react'; // Import User and LogIn icons
+import { useSession } from '@/contexts/SessionContext'; // Import useSession
+import { showError } from '@/utils/toast'; // Import showError
 
 interface DesignElement {
   id: string;
@@ -22,11 +24,11 @@ interface DesignerPageHeaderProps {
   title: string;
   selectedElement: DesignElement | null;
   onDeleteElement: (id: string) => void;
-  // Removed onShareDesign prop
 }
 
-const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selectedElement, onDeleteElement }) => { // Removed onShareDesign from destructuring
+const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selectedElement, onDeleteElement }) => {
   const navigate = useNavigate();
+  const { user, loading: sessionLoading } = useSession(); // Use useSession hook
 
   const handleBackClick = () => {
     navigate(-1); // Go back to the previous page in history
@@ -40,6 +42,40 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
 
   const showDeleteButton = selectedElement && selectedElement.type === 'image';
 
+  const renderAuthButtons = () => {
+    if (sessionLoading) {
+      return <Button variant="ghost" disabled>Loading...</Button>;
+    }
+
+    if (user) {
+      return (
+        <>
+          <Link to="/orders">
+            <Button variant="ghost" size="sm">
+              <User className="mr-1 h-4 w-4" />
+              My Account
+            </Button>
+          </Link>
+          {/* Optionally add admin button if user is admin and you want it here */}
+          {/* {user.user_metadata?.role === 'admin' && (
+            <Link to="/admin">
+              <Button variant="ghost" size="sm">Admin</Button>
+            </Link>
+          )} */}
+        </>
+      );
+    } else {
+      return (
+        <Link to="/login">
+          <Button variant="ghost" size="sm">
+            <LogIn className="mr-1 h-4 w-4" />
+            Login / Register
+          </Button>
+        </Link>
+      );
+    }
+  };
+
   return (
     <div className="sticky top-0 z-20 w-full bg-white dark:bg-gray-800 shadow-sm py-2 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
       <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4">
@@ -49,14 +85,12 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
         {title}
       </h2>
       <div className="flex items-center space-x-2">
-        {/* Removed Share2 button */}
         {showDeleteButton && (
           <Button variant="destructive" size="icon" onClick={handleDeleteClick} title="Delete Selected Image">
             <Trash2 className="h-5 w-5" />
           </Button>
         )}
-        {/* Spacer to balance the layout if delete button is not shown */}
-        {!showDeleteButton && <div className="w-10"></div>} 
+        {renderAuthButtons()}
       </div>
     </div>
   );
