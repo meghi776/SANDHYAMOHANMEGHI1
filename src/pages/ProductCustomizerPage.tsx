@@ -29,7 +29,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { proxyImageUrl } from '@/utils/imageProxy';
-import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
+// Removed: import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
 import { useDemoOrderModal } from '@/contexts/DemoOrderModalContext';
 import { uploadFileToSupabase, deleteFileFromSupabase } from '@/utils/supabaseStorage';
 import CustomizerModals from '@/components/customizer/CustomizerModals';
@@ -217,7 +217,7 @@ const ProductCustomizerPage = () => {
 
       if (productError) {
         console.error("Error fetching product:", productError);
-        showError("Failed to load product details.");
+        // Removed: showError("Failed to load product details.");
         setError(productError.message);
       } else if (productData) {
         console.log("Fetched productData:", productData);
@@ -266,7 +266,7 @@ const ProductCustomizerPage = () => {
           }
         } catch (parseError) {
           console.error("Error parsing database design data:", parseError);
-          showError("Failed to load default design data. It might be corrupted.");
+          // Removed: showError("Failed to load default design data. It might be corrupted.");
         }
         setDemoOrderDetails('Demo User', productData.price?.toFixed(2) || '0.00', 'Demo Address, Demo City, Demo State, 00000');
       }
@@ -659,7 +659,7 @@ const ProductCustomizerPage = () => {
 
   const captureDesignForOrder = async () => {
     if (!canvasContentRef.current || !product) {
-      showError("Design area or product data not found.");
+      // Removed: showError("Design area or product data not found.");
       return null;
     }
 
@@ -725,11 +725,11 @@ const ProductCustomizerPage = () => {
       if (err.stack) {
         console.error("Error stack:", err.stack);
       }
-      if (err.message && err.message.includes("Tainted canvases may not be exported")) {
-        showError("Capture Failed: The design contains images from another domain that are not configured for CORS. Please ensure Supabase Storage CORS settings are correct (Allowed Origins: *, Allowed Methods: GET).");
-      } else {
-        showError(`Capture Failed: ${err.message || "An unexpected error occurred while generating image."}`);
-      }
+      // Removed: if (err.message && err.message.includes("Tainted canvases may not be exported")) {
+      // Removed:   showError("Capture Failed: The design contains images from another domain that are not configured for CORS. Please ensure Supabase Storage CORS settings are correct (Allowed Origins: *, Allowed Methods: GET).");
+      // Removed: } else {
+      // Removed:   showError(`Capture Failed: ${err.message || "An unexpected error occurred while generating image."}`);
+      // Removed: }
       return null;
     } finally {
       if (mockupImageElement instanceof HTMLElement) {
@@ -746,19 +746,19 @@ const ProductCustomizerPage = () => {
 
   const handlePlaceOrder = useCallback(async (isDemo: boolean, paymentId: string | undefined = undefined) => {
     if (!product || !user?.id) {
-      showError("Product or user information missing.");
+      // Removed: showError("Product or user information missing.");
       return;
     }
 
     const hasImageElement = designElements.some(el => el.type === 'image');
     if (!hasImageElement) {
-      showError("Please add at least one image to your design before placing an order.");
+      // Removed: showError("Please add at least one image to your design before placing an order.");
       return;
     }
 
     const imagesStillUploading = designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
     if (imagesStillUploading) {
-      showError("Please wait for all images to finish uploading before placing your order.");
+      // Removed: showError("Please wait for all images to finish uploading before placing your order.");
       return;
     }
 
@@ -771,16 +771,16 @@ const ProductCustomizerPage = () => {
     const finalOrderType = isDemo ? 'demo' : 'normal';
 
     if (!isDemo && (!finalCustomerName.trim() || !finalCustomerAddress.trim() || !finalCustomerPhone.trim())) {
-      showError("Please fill in all customer details.");
+      // Removed: showError("Please fill in all customer details.");
       return;
     }
     if (isDemo && (!finalCustomerName.trim() || !finalCustomerAddress.trim() || isNaN(finalTotalPrice))) {
-      showError("Please provide a valid name, price, and address for the demo order.");
+      // Removed: showError("Please provide a valid name, price, and address for the demo order.");
       return;
     }
 
     setIsPlacingOrder(true);
-    const toastId = showLoading(isDemo ? "Placing demo order..." : "Placing your order...");
+    // Removed: const toastId = showLoading(isDemo ? "Placing demo order..." : "Placing your order...");
     let orderedDesignImageUrl: string | null = null;
     
     try {
@@ -883,7 +883,7 @@ const ProductCustomizerPage = () => {
       setIsCheckoutModalOpen(false);
       setIsDemoOrderModalOpen(false);
       
-      showSuccess(isDemo ? "Demo order placed successfully!" : "Order placed successfully!");
+      // Removed: showSuccess(isDemo ? "Demo order placed successfully!" : "Order placed successfully!");
       navigate('/order-success');
 
     } catch (err: any) {
@@ -892,10 +892,10 @@ const ProductCustomizerPage = () => {
       if (err.message && err.message.includes("Failed to update inventory:") && err.message.includes("Not enough stock available.")) {
         displayErrorMessage = "Failed to place order: Not enough stock available.";
       }
-      showError(displayErrorMessage);
+      // Removed: showError(displayErrorMessage);
     } finally {
       setIsPlacingOrder(false);
-      dismissToast(toastId);
+      // Removed: dismissToast(toastId);
     }
   }, [product, user, customerName, customerAddress, customerPhone, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
 
@@ -905,15 +905,15 @@ const ProductCustomizerPage = () => {
       : designElements.find(el => el.type === 'image');
 
     if (!imageToBlur) {
-      showError("Please add an image to the canvas first to use as a blurred background.");
+      // Removed: showError("Please add an image to the canvas first to use as a blurred background.");
       return;
     }
     if (!product) {
-      showError("Product data not loaded. Cannot apply blur.");
+      // Removed: showError("Product data not loaded. Cannot apply blur.");
       return;
     }
 
-    const toastId = showLoading("Applying blur effect...");
+    // Removed: const toastId = showLoading("Applying blur effect...");
 
     const img = new window.Image();
     img.crossOrigin = 'Anonymous';
@@ -924,8 +924,8 @@ const ProductCustomizerPage = () => {
       const ctx = canvas.getContext('2d');
 
       if (!ctx) {
-        showError("Failed to get canvas context.");
-        dismissToast(toastId);
+        // Removed: showError("Failed to get canvas context.");
+        // Removed: dismissToast(toastId);
         return;
       }
 
@@ -940,20 +940,20 @@ const ProductCustomizerPage = () => {
       const blurredDataUrl = canvas.toDataURL('image/png');
       setBlurredBackgroundImageUrl(blurredDataUrl);
       setSelectedCanvasColor(null);
-      showSuccess("Blur effect applied!");
-      dismissToast(toastId);
+      // Removed: showSuccess("Blur effect applied!");
+      // Removed: dismissToast(toastId);
     };
 
     img.onerror = (e) => {
       console.error("Error loading image for blur:", e);
-      showError("Failed to load image for blur effect. Ensure image is accessible and CORS is configured.");
-      dismissToast(toastId);
+      // Removed: showError("Failed to load image for blur effect. Ensure image is accessible and CORS is configured.");
+      // Removed: dismissToast(toastId);
     };
   }, [designElements, product]);
 
   const processAndUploadImage = async (file: File | Blob) => {
     if (!product) {
-      showError("Product data not loaded. Cannot add image.");
+      // Removed: showError("Product data not loaded. Cannot add image.");
       return;
     }
   
@@ -1019,14 +1019,14 @@ const ProductCustomizerPage = () => {
       let compressedFile = file;
       try {
         if (file.size > compressionOptions.maxSizeMB * 1024 * 1024 || originalWidth > compressionOptions.maxWidthOrHeight || originalHeight > compressionOptions.maxWidthOrHeight) {
-          showLoading("Compressing image...");
+          // Removed: showLoading("Compressing image...");
           compressedFile = await imageCompression(file, compressionOptions);
-          dismissToast();
-          showSuccess("Image compressed successfully!");
+          // Removed: dismissToast();
+          // Removed: showSuccess("Image compressed successfully!");
         }
       } catch (compressionError) {
         console.error("Image compression failed:", compressionError);
-        showError("Image compression failed. Uploading original image.");
+        // Removed: showError("Image compression failed. Uploading original image.");
       }
   
       uploadFileToSupabase(compressedFile, 'order-mockups', 'user-uploads')
@@ -1038,7 +1038,7 @@ const ProductCustomizerPage = () => {
               )
             );
             URL.revokeObjectURL(tempUrl);
-            showSuccess("Image uploaded successfully!");
+            // Removed: showSuccess("Image uploaded successfully!");
 
             if (shouldApplyBlur) {
               handleBlurBackground(uploadedUrl);
@@ -1050,14 +1050,14 @@ const ProductCustomizerPage = () => {
           } else {
             setDesignElements(prev => prev.filter(el => el.id !== newElementId));
             URL.revokeObjectURL(tempUrl);
-            showError("Failed to upload image. Please try again.");
+            // Removed: showError("Failed to upload image. Please try again.");
           }
         })
         .catch(err => {
           console.error("Error during background image upload:", err);
           setDesignElements(prev => prev.filter(el => el.id !== newElementId));
           URL.revokeObjectURL(tempUrl);
-          showError(`An error occurred during upload: ${err.message}`);
+          // Removed: showError(`An error occurred during upload: ${err.message}`);
         })
         .finally(() => {
           if (fileInputRef.current) {
@@ -1067,15 +1067,9 @@ const ProductCustomizerPage = () => {
     };
   
     img.onerror = () => {
-      showError("Failed to load selected image for preview.");
+      // Removed: showError("Failed to load selected image for preview.");
       URL.revokeObjectURL(tempUrl);
     };
-  };
-
-  const handleImageFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    await processAndUploadImage(file);
   };
 
   const handleCapacitorImageSelect = async () => {
@@ -1095,33 +1089,33 @@ const ProductCustomizerPage = () => {
     } catch (error: any) {
       if (error.message !== "User cancelled photos app") {
         console.error('Error selecting image with Capacitor Camera:', error);
-        showError('Could not select image.');
+        // Removed: showError('Could not select image.');
       }
     }
   };
 
   const handleBuyNowClick = useCallback(() => {
     if (!user) {
-      showError("Please log in to place an order.");
+      // Removed: showError("Please log in to place an order.");
       navigate('/login');
       return;
     }
     if (!product) {
-      showError("Product not loaded. Cannot proceed with order.");
+      // Removed: showError("Product not loaded. Cannot proceed with order.");
       return;
     }
     if (product.inventory !== null && product.inventory <= 0) {
-      showError("This product is currently out of stock.");
+      // Removed: showError("This product is currently out of stock.");
       return;
     }
     const hasImageElement = designElements.some(el => el.type === 'image');
     if (!hasImageElement) {
-      showError("Please add at least one image to your design before placing an order.");
+      // Removed: showError("Please add at least one image to your design before placing an order.");
       return;
     }
     const imagesStillUploading = designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
     if (imagesStillUploading) {
-      showError("Please wait for all images to finish uploading before placing your order.");
+      // Removed: showError("Please wait for all images to finish uploading before placing your order.");
       return;
     }
     setIsCheckoutModalOpen(true);
@@ -1155,7 +1149,7 @@ const ProductCustomizerPage = () => {
     };
     setDesignElements(prev => [...prev, newElement]);
     setSelectedElementId(newElement.id);
-    showSuccess("New text element added!");
+    // Removed: showSuccess("New text element added!");
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -1185,19 +1179,19 @@ const ProductCustomizerPage = () => {
 
   const handleClearBlur = () => {
     setBlurredBackgroundImageUrl(null);
-    showSuccess("Blurred background cleared.");
+    // Removed: showSuccess("Blurred background cleared.");
   };
 
   const handleSelectCanvasColor = (color: string) => {
     setSelectedCanvasColor(color);
     setBlurredBackgroundImageUrl(null);
-    showSuccess(`Canvas background set to ${color}.`);
+    // Removed: showSuccess(`Canvas background set to ${color}.`);
   };
 
   const handleClearBackground = () => {
     setSelectedCanvasColor(null);
     setBlurredBackgroundImageUrl(null);
-    showSuccess("Canvas background cleared.");
+    // Removed: showSuccess("Canvas background cleared.");
   };
 
   const isBuyNowDisabled = loading || isPlacingOrder || (product && product.inventory !== null && product.inventory <= 0) || designElements.filter(el => el.type === 'image').length === 0 || designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
