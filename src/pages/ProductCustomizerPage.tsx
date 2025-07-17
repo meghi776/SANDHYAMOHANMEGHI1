@@ -23,7 +23,7 @@ import {
   FolderOpen,
   Wand2,
 } from 'lucide-react';
-import html2canvas from 'html2canvas'; // Corrected import
+import html2canvas from 'html2canvas';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSession } from '@/contexts/SessionContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -110,15 +110,15 @@ const ProductCustomizerPage = () => {
   const canvasContentRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
-  const { user, session } = useSession(); // Get session and user
-  const [userRole, setUserRole] = useState<'user' | 'admin' | null>(null); // State for user role
+  const { user, session } = useSession();
+  const [userRole, setUserRole] = useState<'user' | 'admin' | null>(null);
   const { isDemoOrderModalOpen, setIsDemoOrderModalOpen, demoCustomerName, demoOrderPrice, setDemoOrderDetails, demoOrderAddress } = useDemoOrderModal();
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('COD'); // Default to COD
+  const [paymentMethod, setPaymentMethod] = useState('COD');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   const [mockupOverlayData, setMockupOverlayData] = useState<MockupData | null>(null);
@@ -298,7 +298,7 @@ const ProductCustomizerPage = () => {
       }
     };
     fetchUserRole();
-  }, [user]); // Re-run when user changes
+  }, [user]);
 
   useEffect(() => {
     return () => {
@@ -469,7 +469,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -524,7 +524,7 @@ const ProductCustomizerPage = () => {
       startY: unscaledClientY,
       initialWidth: element.width,
       initialHeight: element.height,
-      initialFontSize: element.type === 'text' ? (element.fontSize || 35) : 0, // Capture font size for text
+      initialFontSize: element.type === 'text' ? (element.fontSize || 35) : 0,
       activeElementId: id,
     };
 
@@ -548,7 +548,7 @@ const ProductCustomizerPage = () => {
       startY: unscaledClientY,
       initialWidth: element.width,
       initialHeight: element.height,
-      initialFontSize: element.type === 'text' ? (element.fontSize || 35) : 0, // Capture font size for text
+      initialFontSize: element.type === 'text' ? (element.fontSize || 35) : 0,
       activeElementId: id,
     };
 
@@ -574,16 +574,14 @@ const ProductCustomizerPage = () => {
 
     if (handle === 'br') {
       if (element.type === 'text') {
-        // For text, adjust width and font size
         newWidth = Math.max(20, initialWidth + deltaX);
-        // Adjust font size based on vertical drag
-        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5)); // Adjust multiplier as needed
+        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5));
         
         updateElement(activeElementId, {
           width: newWidth,
           fontSize: newFontSize,
         });
-      } else { // For image elements
+      } else {
         newWidth = Math.max(20, initialWidth + deltaX);
         newHeight = Math.max(20, initialHeight + deltaY);
         updateElement(activeElementId, {
@@ -614,16 +612,14 @@ const ProductCustomizerPage = () => {
 
     if (handle === 'br') {
       if (element.type === 'text') {
-        // For text, adjust width and font size
         newWidth = Math.max(20, initialWidth + deltaX);
-        // Adjust font size based on vertical drag
-        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5)); // Adjust multiplier as needed
+        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5));
         
         updateElement(activeElementId, {
           width: newWidth,
           fontSize: newFontSize,
         });
-      } else { // For image elements
+      } else {
         newWidth = Math.max(20, initialWidth + deltaX);
         newHeight = Math.max(20, initialHeight + deltaY);
         updateElement(activeElementId, {
@@ -748,7 +744,7 @@ const ProductCustomizerPage = () => {
     }
   };
 
-  const handlePlaceOrder = useCallback(async (isDemo: boolean, paymentId: string | undefined = undefined) => { // Added paymentId parameter
+  const handlePlaceOrder = useCallback(async (isDemo: boolean, paymentId: string | undefined = undefined) => {
     if (!product || !user?.id) {
       showError("Product or user information missing.");
       return;
@@ -876,7 +872,6 @@ const ProductCustomizerPage = () => {
           ordered_design_image_url: orderedDesignImageUrl,
           ordered_design_data: designElements,
           type: finalOrderType,
-          // Add Razorpay payment ID if available
           ...(paymentId && { payment_id: paymentId }),
         });
 
@@ -1217,7 +1212,7 @@ const ProductCustomizerPage = () => {
         onDeleteElement={deleteElement}
       />
       
-      <main className="flex-1 flex flex-col md:flex-row overflow-y-auto pb-65">
+      <main className="flex-1 flex flex-col md:flex-row overflow-y-auto pt-14 pb-65"> {/* Added pt-14 here */}
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -1267,7 +1262,7 @@ const ProductCustomizerPage = () => {
                       transform: `rotate(${el.rotation || 0}deg)`,
                       transformOrigin: 'center center',
                       width: `${el.width * scaleFactor}px`,
-                      height: el.type === 'text' ? 'auto' : `${el.height * scaleFactor}px`, // Changed height to 'auto' for text elements
+                      height: el.type === 'text' ? 'auto' : `${el.height * scaleFactor}px`,
                       zIndex: 5,
                       touchAction: 'none',
                     }}
@@ -1295,7 +1290,7 @@ const ProductCustomizerPage = () => {
                             fontFamily: el.fontFamily,
                             textShadow: el.textShadow ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none',
                             wordBreak: 'break-word',
-                            minHeight: `${(el.fontSize || 35) * scaleFactor * 1.2}px`, // Ensure minimum height for interaction
+                            minHeight: `${(el.fontSize || 35) * scaleFactor * 1.2}px`,
                           }}
                         >
                           {el.value}
@@ -1506,7 +1501,7 @@ const ProductCustomizerPage = () => {
         customerPhone={customerPhone}
         setCustomerPhone={setCustomerPhone}
         paymentMethod={paymentMethod}
-        setPaymentMethod={setPaymentMethod} // Pass setPaymentMethod
+        setPaymentMethod={setPaymentMethod}
         isPlacingOrder={isPlacingOrder}
         handlePlaceOrder={handlePlaceOrder}
         isDemoOrderModalOpen={isDemoOrderModalOpen}

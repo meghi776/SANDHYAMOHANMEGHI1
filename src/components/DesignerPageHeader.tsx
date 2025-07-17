@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2, User, LogIn, Eye } from 'lucide-react'; // Import Eye icon
-import { useSession } from '@/contexts/SessionContext'; // Import useSession
-import { showError } from '@/utils/toast'; // Import showError
-import { useDemoOrderModal } from '@/contexts/DemoOrderModalContext'; // Import useDemoOrderModal
+import { ArrowLeft, Trash2, User, LogIn, Eye } from 'lucide-react';
+import { useSession } from '@/contexts/SessionContext';
+import { showError } from '@/utils/toast';
+import { useDemoOrderModal } from '@/contexts/DemoOrderModalContext';
 
 interface DesignElement {
   id: string;
@@ -30,7 +30,7 @@ interface DesignerPageHeaderProps {
 const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selectedElement, onDeleteElement }) => {
   const navigate = useNavigate();
   const { user, loading: sessionLoading } = useSession();
-  const { setIsDemoOrderModalOpen, setDemoOrderDetails } = useDemoOrderModal(); // Use useDemoOrderModal
+  const { setIsDemoOrderModalOpen, setDemoOrderDetails } = useDemoOrderModal();
 
   const handleBackClick = () => {
     navigate(-1);
@@ -87,7 +87,7 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
   };
 
   return (
-    <div className="sticky top-0 z-20 w-full bg-white dark:bg-gray-800 shadow-sm py-2 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+    <div className="fixed top-0 w-full z-20 bg-white dark:bg-gray-800 shadow-sm py-2 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
       <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4">
         <ArrowLeft className="h-5 w-5" />
       </Button>
