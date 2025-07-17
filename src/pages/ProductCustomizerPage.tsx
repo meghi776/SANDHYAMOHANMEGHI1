@@ -469,7 +469,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -1212,7 +1212,8 @@ const ProductCustomizerPage = () => {
         onDeleteElement={deleteElement}
       />
       
-      <main className="flex-1 flex flex-col md:flex-row overflow-y-auto pt-14 pb-65"> {/* Added pt-14 here */}
+      {/* This div now acts as the main scrollable content area */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-y-auto pt-14 pb-65">
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -1389,7 +1390,7 @@ const ProductCustomizerPage = () => {
           accept="image/*"
           className="hidden"
         />
-      </main>
+      </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg p-1 flex flex-wrap justify-center items-center gap-1 border-t border-gray-200 dark:border-gray-700 z-10">
         {selectedElementId && designElements.find(el => el.id === selectedElementId)?.type === 'text' ? (
