@@ -133,24 +133,30 @@ const ProductCustomizerPage = () => {
     activeElementId: null,
   });
 
-  const resizeState = useRef<Omit<TouchState, 'initialDistance' | 'initialMidX' | 'initialMidY' | 'initialAngle' | 'initialRotation'> & {
+  const resizeState = useRef<{
+    mode: 'none' | 'resizing';
     handle: 'br';
+    startX: number; // Unscaled clientX
+    startY: number; // Unscaled clientY
     initialWidth: number;
     initialHeight: number;
     initialFontSize: number;
-    initialElementX: number; // Added this
-    initialElementY: number; // Added this
+    initialElementX: number; // Element's X at start of resize
+    initialElementY: number; // Element's Y at start of resize
+    initialDiagonalDistance: number; // Distance from element's origin to startX, startY
+    activeElementId: string | null;
   }>({
     mode: 'none',
+    handle: 'br',
     startX: 0,
     startY: 0,
-    activeElementId: null,
-    handle: 'br',
     initialWidth: 0,
     initialHeight: 0,
     initialFontSize: 0,
-    initialElementX: 0, // Initialize
-    initialElementY: 0, // Initialize
+    initialElementX: 0,
+    initialElementY: 0,
+    initialDiagonalDistance: 0,
+    activeElementId: null,
   });
 
   const predefinedColors = [
@@ -494,7 +500,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -542,6 +548,11 @@ const ProductCustomizerPage = () => {
 
     const { x: unscaledClientX, y: unscaledClientY } = getUnscaledCoords(e.clientX, e.clientY);
 
+    const initialDiagonalDistance = Math.sqrt(
+      Math.pow(unscaledClientX - element.x, 2) +
+      Math.pow(unscaledClientY - element.y, 2)
+    );
+
     resizeState.current = {
       mode: 'resizing',
       handle: handle,
@@ -551,8 +562,9 @@ const ProductCustomizerPage = () => {
       initialHeight: element.height,
       initialFontSize: element.type === 'text' ? (element.fontSize || 35) : 0,
       activeElementId: id,
-      initialElementX: element.x, // Capture element's initial X
-      initialElementY: element.y, // Capture element's initial Y
+      initialElementX: element.x,
+      initialElementY: element.y,
+      initialDiagonalDistance: initialDiagonalDistance,
     };
 
     document.addEventListener('mousemove', onResizeMouseMove);
@@ -568,6 +580,11 @@ const ProductCustomizerPage = () => {
 
     const { x: unscaledClientX, y: unscaledClientY } = getUnscaledCoords(e.touches[0].clientX, e.touches[0].clientY);
 
+    const initialDiagonalDistance = Math.sqrt(
+      Math.pow(unscaledClientX - element.x, 2) +
+      Math.pow(unscaledClientY - element.y, 2)
+    );
+
     resizeState.current = {
       mode: 'resizing',
       handle: handle,
@@ -577,8 +594,9 @@ const ProductCustomizerPage = () => {
       initialHeight: element.height,
       initialFontSize: element.type === 'text' ? (element.fontSize || 35) : 0,
       activeElementId: id,
-      initialElementX: element.x, // Capture element's initial X
-      initialElementY: element.y, // Capture element's initial Y
+      initialElementX: element.x,
+      initialElementY: element.y,
+      initialDiagonalDistance: initialDiagonalDistance,
     };
 
     document.addEventListener('touchmove', onResizeTouchMove, { passive: false });
@@ -586,7 +604,7 @@ const ProductCustomizerPage = () => {
   };
 
   const onResizeMouseMove = (moveEvent: MouseEvent) => {
-    const { mode, handle, startX, startY, initialWidth, initialHeight, initialFontSize, activeElementId } = resizeState.current;
+    const { mode, handle, initialWidth, initialHeight, initialFontSize, activeElementId, initialElementX, initialElementY, initialDiagonalDistance } = resizeState.current;
     if (mode !== 'resizing' || !activeElementId || !canvasContentRef.current) return;
 
     const element = designElements.find(el => el.id === activeElementId);
@@ -594,15 +612,14 @@ const ProductCustomizerPage = () => {
 
     const { x: currentUnscaledX, y: currentUnscaledY } = getUnscaledCoords(moveEvent.clientX, moveEvent.clientY);
 
-    const deltaX = currentUnscaledX - startX;
-    const deltaY = currentUnscaledY - startY;
-
     let newWidth = initialWidth;
     let newHeight = initialHeight;
     let newFontSize = initialFontSize;
 
     if (handle === 'br') {
       if (element.type === 'text') {
+        const deltaX = currentUnscaledX - resizeState.current.startX;
+        const deltaY = currentUnscaledY - resizeState.current.startY;
         newWidth = Math.max(20, initialWidth + deltaX);
         newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5));
         
@@ -611,24 +628,14 @@ const ProductCustomizerPage = () => {
           fontSize: newFontSize,
         });
       } else { // This is the image resizing part
-        const { initialElementX, initialElementY } = resizeState.current;
-
-        // Calculate current distance from element's top-left to current cursor
-        const currentDistance = Math.sqrt(
+        const currentDiagonalDistance = Math.sqrt(
           Math.pow(currentUnscaledX - initialElementX, 2) +
           Math.pow(currentUnscaledY - initialElementY, 2)
         );
 
-        // Calculate initial distance from element's top-left to initial cursor (which was at the bottom-right handle)
-        // This assumes the handle is at initialElementX + initialWidth, initialElementY + initialHeight
-        const initialDistanceToHandle = Math.sqrt(
-          Math.pow((initialElementX + initialWidth) - initialElementX, 2) +
-          Math.pow((initialElementY + initialHeight) - initialElementY, 2)
-        );
+        if (initialDiagonalDistance === 0) return; // Avoid division by zero
 
-        if (initialDistanceToHandle === 0) return; // Avoid division by zero
-
-        const scale = currentDistance / initialDistanceToHandle;
+        const scale = currentDiagonalDistance / initialDiagonalDistance;
 
         newWidth = Math.max(20, initialWidth * scale);
         newHeight = Math.max(20, initialHeight * scale);
@@ -644,7 +651,7 @@ const ProductCustomizerPage = () => {
   const onResizeTouchMove = (moveEvent: TouchEvent) => {
     if (moveEvent.touches.length !== 1) return;
     moveEvent.preventDefault();
-    const { mode, handle, startX, startY, initialWidth, initialHeight, initialFontSize, activeElementId } = resizeState.current;
+    const { mode, handle, initialWidth, initialHeight, initialFontSize, activeElementId, initialElementX, initialElementY, initialDiagonalDistance } = resizeState.current;
     if (mode !== 'resizing' || !activeElementId || !canvasContentRef.current) return;
 
     const element = designElements.find(el => el.id === activeElementId);
@@ -652,15 +659,14 @@ const ProductCustomizerPage = () => {
 
     const { x: currentUnscaledX, y: currentUnscaledY } = getUnscaledCoords(moveEvent.touches[0].clientX, moveEvent.touches[0].clientY);
 
-    const deltaX = currentUnscaledX - startX;
-    const deltaY = currentUnscaledY - startY;
-
     let newWidth = initialWidth;
     let newHeight = initialHeight;
     let newFontSize = initialFontSize;
 
     if (handle === 'br') {
       if (element.type === 'text') {
+        const deltaX = currentUnscaledX - resizeState.current.startX;
+        const deltaY = currentUnscaledY - resizeState.current.startY;
         newWidth = Math.max(20, initialWidth + deltaX);
         newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5));
         
@@ -669,24 +675,14 @@ const ProductCustomizerPage = () => {
           fontSize: newFontSize,
         });
       } else { // This is the image resizing part
-        const { initialElementX, initialElementY } = resizeState.current;
-
-        // Calculate current distance from element's top-left to current cursor
-        const currentDistance = Math.sqrt(
+        const currentDiagonalDistance = Math.sqrt(
           Math.pow(currentUnscaledX - initialElementX, 2) +
           Math.pow(currentUnscaledY - initialElementY, 2)
         );
 
-        // Calculate initial distance from element's top-left to initial cursor (which was at the bottom-right handle)
-        // This assumes the handle is at initialElementX + initialWidth, initialElementY + initialHeight
-        const initialDistanceToHandle = Math.sqrt(
-          Math.pow((initialElementX + initialWidth) - initialElementX, 2) +
-          Math.pow((initialElementY + initialHeight) - initialElementY, 2)
-        );
+        if (initialDiagonalDistance === 0) return; // Avoid division by zero
 
-        if (initialDistanceToHandle === 0) return; // Avoid division by zero
-
-        const scale = currentDistance / initialDistanceToHandle;
+        const scale = currentDiagonalDistance / initialDiagonalDistance;
 
         newWidth = Math.max(20, initialWidth * scale);
         newHeight = Math.max(20, initialHeight * scale);
