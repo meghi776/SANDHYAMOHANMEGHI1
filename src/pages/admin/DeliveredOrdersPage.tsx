@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Eye, Trash2, Image as ImageIcon, ArrowDownWideNarrow, ArrowUpWideNarrow, Download, ArrowLeft, ListChecks, Upload, ShoppingCart, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2, Eye, Trash2, Image as ImageIcon, ArrowDownWideNarrow, ArrowUpWideNarrow, Download, ArrowLeft, ListChecks, Calendar as CalendarIcon, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import JSZip from 'jszip';
@@ -606,6 +606,7 @@ const DeliveredOrdersPage = () => {
                       <div className="flex items-center">Date {getSortIcon('created_at')}</div>
                     </TableHead>
                     <TableHead>Customer</TableHead>
+                    <TableHead>User Email</TableHead> {/* New TableHead for User Email */}
                     <TableHead>Product</TableHead>
                     <TableHead>Design</TableHead>
                     <TableHead>Comment</TableHead>
@@ -623,6 +624,7 @@ const DeliveredOrdersPage = () => {
                       <TableCell className="font-medium text-xs">{order.display_id || `${order.id.substring(0, 8)}...`}</TableCell>
                       <TableCell>{format(new Date(order.created_at), 'PPP')}</TableCell>
                       <TableCell>{order.customer_name}</TableCell>
+                      <TableCell>{order.user_email || 'N/A'}</TableCell> {/* New TableCell for User Email */}
                       <TableCell>{order.products?.name || 'N/A'}</TableCell>
                       <TableCell>
                         {order.ordered_design_image_url ? (
