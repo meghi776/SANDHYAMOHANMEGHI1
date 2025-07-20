@@ -93,7 +93,7 @@ serve(async (req) => {
         user_metadata: {
           first_name: customer_name.split(' ')[0] || 'Guest',
           last_name: customer_name.split(' ').slice(1).join(' ') || '',
-          phone_number: customer_phone, // Store phone in metadata
+          phone: customer_phone, // Store phone in metadata
         },
       });
 
