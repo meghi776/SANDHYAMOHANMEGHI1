@@ -149,13 +149,16 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
           const data = await response.json();
 
           if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
-            const postOffice = data[0].PostOffice[0];
-            let mandalName = postOffice.Name || '';
-            if (postOffice.BranchType === 'Sub Post Office') {
-              mandalName += ' S.O.';
+            let selectedPostOffice = data[0].PostOffice[0]; // Default to first one
+
+            // Prioritize "Sub Post Office" (S.O.)
+            const subPostOffice = data[0].PostOffice.find((po: any) => po.BranchType === 'Sub Post Office');
+            if (subPostOffice) {
+              selectedPostOffice = subPostOffice;
             }
-            setCustomerMandal(mandalName);
-            setCustomerDistrict(postOffice.District || '');
+            
+            setCustomerMandal(selectedPostOffice.Name || '');
+            setCustomerDistrict(selectedPostOffice.District || '');
             setIsPincodeValid(true); // Pincode is valid
           } else {
             showError("Invalid Pincode or no data found.");
