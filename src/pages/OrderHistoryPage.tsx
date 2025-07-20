@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Image as ImageIcon, ArrowDownWideNarrow, ArrowUpWideNarrow, Calendar as CalendarIcon, XCircle, LogOut, Edit } from 'lucide-react';
+import { Loader2, Image as ImageIcon, ArrowDownWideNarrow, ArrowUpWideNarrow, Calendar as CalendarIcon, XCircle, LogOut, Edit, KeyRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -72,6 +72,11 @@ const OrderHistoryPage = () => {
   const [userEditCustomerPhone, setUserEditCustomerPhone] = useState('');
   const [userEditTotalPrice, setUserEditTotalPrice] = useState<string>(''); // New state for editable price
   const [userEditComment, setUserEditComment] = useState(''); // New state for comment
+
+  // States for change password modal
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const paymentMethods = ['COD']; // Updated payment methods
 
@@ -321,6 +326,30 @@ const OrderHistoryPage = () => {
     navigate('/login'); // Redirect to login page
   };
 
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      showError("Password must be at least 6 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showError("Passwords do not match.");
+      return;
+    }
+
+    const toastId = showLoading("Updating password...");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+    dismissToast(toastId);
+    if (error) {
+      showError(`Failed to update password: ${error.message}`);
+    } else {
+      showSuccess("Password updated successfully!");
+      setIsChangePasswordModalOpen(false);
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+  };
+
   if (sessionLoading || loading) {
     return (
       <div className="flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -357,9 +386,14 @@ const OrderHistoryPage = () => {
     <div className="p-4 bg-gray-50 dark:bg-gray-900">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Your Orders</h1>
-        <Button onClick={handleSignOut} variant="outline">
-          <LogOut className="mr-2 h-4 w-4" /> Sign Out
-        </Button>
+        <div className="flex space-x-2">
+          <Button onClick={() => setIsChangePasswordModalOpen(true)} variant="outline">
+            <KeyRound className="mr-2 h-4 w-4" /> Change Password
+          </Button>
+          <Button onClick={handleSignOut} variant="outline">
+            <LogOut className="mr-2 h-4 w-4" /> Sign Out
+          </Button>
+        </div>
       </div>
 
       <Tabs value={filterOption} onValueChange={setFilterOption} className="w-full">
@@ -903,6 +937,50 @@ const OrderHistoryPage = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsUserEditModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveUserOrderEdit}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={isChangePasswordModalOpen} onOpenChange={setIsChangePasswordModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Enter a new password for your account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="new-password" className="text-right">
+                New Password
+              </Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="confirm-password" className="text-right">
+                Confirm Password
+              </Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsChangePasswordModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleChangePassword}>
               Save Changes
             </Button>
           </DialogFooter>

@@ -3,11 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useSession } from '@/contexts/SessionContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showError, showSuccess } from '@/utils/toast';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Login = () => {
   const [searchParams] = useSearchParams();
@@ -85,6 +86,13 @@ const Login = () => {
                 required
               />
             </div>
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>First Time User?</AlertTitle>
+              <AlertDescription>
+                If you checked out as a guest, your password is your 10-digit phone number. Please change it in 'My Account' after logging in.
+              </AlertDescription>
+            </Alert>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full" disabled={loading}>
