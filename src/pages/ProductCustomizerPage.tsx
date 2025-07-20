@@ -352,7 +352,7 @@ const ProductCustomizerPage = () => {
       const elementToDelete = prev.find(el => el.id === id);
       if (elementToDelete) {
         if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('blob:')) {
-          URL.revokeObjectURL(el.value);
+          URL.revokeObjectURL(elementToDelete.value);
         }
         if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('https://')) {
           const url = new URL(elementToDelete.value);
@@ -495,7 +495,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -1552,10 +1552,10 @@ const ProductCustomizerPage = () => {
         setDemoOrderDetails={setDemoOrderDetails}
         isSavedDesignsModalOpen={isSavedDesignsModalOpen}
         setIsSavedDesignsModalOpen={setIsSavedDesignsModalOpen}
-        currentDesignElements={currentDesignElements}
-        currentSelectedCanvasColor={currentSelectedCanvasColor}
-        currentBlurredBackgroundImageUrl={currentBlurredBackgroundImageUrl}
-        onLoadDesign={onLoadDesign}
+        currentDesignElements={designElements}
+        currentSelectedCanvasColor={selectedCanvasColor}
+        currentBlurredBackgroundImageUrl={blurredBackgroundImageUrl}
+        onLoadDesign={loadDesign}
         canvasContentRef={canvasContentRef}
         user={user}
       />
