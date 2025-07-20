@@ -92,6 +92,11 @@ const Login = () => {
               Sign In
             </Button>
             <div className="text-center text-sm">
+              <Link to="/forgot-password" className="underline text-sm text-muted-foreground hover:text-primary">
+                Forgot your password?
+              </Link>
+            </div>
+            <div className="text-center text-sm">
               Don't have an account?{' '}
               <Link to="/signup" className="underline text-primary font-medium">
                 Sign up with mobile
