@@ -245,11 +245,10 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       }
 
       console.log("CustomizerModals: Payload to send to Razorpay Edge Function:", payloadToSend);
-      // Removed explicit stringify, letting invoke handle it
       const { data, error: invokeError } = await supabase.functions.invoke('create-razorpay-order', {
-        body: payloadToSend, // Pass object directly
+        body: JSON.stringify(payloadToSend), // Explicitly stringify the payload
         headers: {
-          'Content-Type': 'application/json', // Explicitly set Content-Type
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentSession.access_token}`,
         },
       });

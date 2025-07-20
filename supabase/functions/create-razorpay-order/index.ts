@@ -12,7 +12,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Add logging for request headers
   console.log("Edge Function: Request Headers:");
   for (const [key, value] of req.headers.entries()) {
     console.log(`  ${key}: ${value}`);
@@ -20,27 +19,23 @@ serve(async (req) => {
 
   let payload;
   try {
-    payload = await req.json(); // Directly parse the JSON body
-    console.log("Edge Function: Parsed payload:", payload); // Log the parsed payload
+    const bodyText = await req.text();
+    console.log("Edge Function: Received raw body text:", bodyText);
 
-    if (!payload || Object.keys(payload).length === 0) {
-      console.error("Edge Function: Received empty or null JSON payload after parsing.");
-      return new Response(JSON.stringify({ error: 'Empty or invalid JSON payload received.' }), {
+    if (!bodyText) {
+      console.error("Edge Function: Request body is empty.");
+      return new Response(JSON.stringify({ error: 'Request body was empty. Expected JSON payload.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
     }
+
+    payload = JSON.parse(bodyText);
+    console.log("Edge Function: Parsed payload:", payload);
+
   } catch (e) {
     if (e instanceof SyntaxError) {
       console.error("Edge Function: JSON parsing error - Invalid or empty request body:", e.message);
-      // Check if the body was actually empty based on content-length
-      const contentLength = req.headers.get('content-length');
-      if (contentLength === '0') {
-        return new Response(JSON.stringify({ error: 'Request body was empty. Expected JSON payload.' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
       return new Response(JSON.stringify({ error: 'Invalid or malformed JSON body. Please ensure all required fields are sent.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
