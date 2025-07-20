@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useSession } from '@/contexts/SessionContext';
 import { Loader2 } from 'lucide-react';
 
@@ -39,7 +39,7 @@ const Login = () => {
           <CardTitle className="text-2xl font-bold text-gray-800 dark:text-gray-100">
             Welcome to Meghi
           </CardTitle>
-          <p className="text-gray-600 dark:text-gray-300">Sign in or create an account</p>
+          <p className="text-gray-600 dark:text-gray-300">Sign in to your account</p>
         </CardHeader>
         <CardContent>
           <Auth
@@ -57,10 +57,19 @@ const Login = () => {
               },
             }}
             theme="light"
-            view={initialView}
+            view="sign_in"
+            showLinks={false}
             redirectTo={window.location.origin + redirectTo}
           />
         </CardContent>
+        <CardFooter className="flex justify-center">
+          <p className="text-sm text-muted-foreground">
+            Don't have an account?{' '}
+            <Link to="/signup" className="underline text-primary font-medium">
+              Sign up with mobile
+            </Link>
+          </p>
+        </CardFooter>
       </Card>
     </div>
   );

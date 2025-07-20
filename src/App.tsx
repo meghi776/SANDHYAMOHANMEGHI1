@@ -33,6 +33,7 @@ import TermsAndConditionsPage from "./pages/TermsAndConditionsPage";
 import CancellationRefundPage from "./pages/CancellationRefundPage";
 import ShippingDeliveryPage from "./pages/ShippingDeliveryPage";
 import ContactUsPage from "./pages/ContactUsPage";
+import MobileSignUp from "./pages/MobileSignUp";
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function AppContent() {
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<MobileSignUp />} />
             <Route path="/categories/:categoryId/brands" element={<BrandsPage />} />
             {/* ProductCustomizerPage now uses CustomizerLayout */}
             <Route path="/orders" element={<OrderHistoryPage />} />
