@@ -88,7 +88,7 @@ const Login = () => {
             </div>
             <Alert>
               <Info className="h-4 w-4" />
-              <AlertTitle>First Time User?</AlertTitle>
+              <AlertTitle>Already Placed an Order?</AlertTitle>
               <AlertDescription>
                 If you checked out as a guest, your password is your 10-digit phone number. Please change it in 'My Account' after logging in.
               </AlertDescription>
