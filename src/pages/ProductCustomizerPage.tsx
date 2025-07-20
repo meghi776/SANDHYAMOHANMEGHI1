@@ -898,19 +898,15 @@ const ProductCustomizerPage = () => {
       if (user) {
           console.log("Client: Logged-in user placing order via 'place-order-and-decrement-inventory'.");
           invokeResult = await supabase.functions.invoke('place-order-and-decrement-inventory', {
-              body: JSON.stringify({ ...orderPayload, user_id: user.id }),
+              body: { ...orderPayload, user_id: user.id },
               headers: {
-                  'Content-Type': 'application/json',
                   'Authorization': `Bearer ${session?.access_token}`,
               },
           });
       } else {
           console.log("Client: Guest user placing order via 'guest-register-and-order'.");
           invokeResult = await supabase.functions.invoke('guest-register-and-order', {
-              body: JSON.stringify(orderPayload),
-              headers: {
-                  'Content-Type': 'application/json',
-              },
+              body: orderPayload,
           });
       }
 
