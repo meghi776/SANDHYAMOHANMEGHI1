@@ -46,8 +46,7 @@ interface CustomizerModalsProps {
   setIsCheckoutModalOpen: (isOpen: boolean) => void;
   customerName: string;
   setCustomerName: (name: string) => void;
-  customerAddress: string;
-  setCustomerAddress: (address: string) => void;
+  // Removed customerAddress, replaced with individual fields
   customerPhone: string;
   setCustomerPhone: (phone: string) => void;
   paymentMethod: string;
@@ -58,8 +57,8 @@ interface CustomizerModalsProps {
   setIsDemoOrderModalOpen: (isOpen: boolean) => void;
   demoCustomerName: string;
   demoOrderPrice: string;
-  demoOrderAddress: string;
-  setDemoOrderDetails: (name: string, price: string, address: string) => void;
+  demoOrderAddress: string; // Kept for demo form
+  setDemoOrderDetails: (name: string, price: string, address: string) => void; // Kept for demo form
   isSavedDesignsModalOpen: boolean;
   setIsSavedDesignsModalOpen: (isOpen: boolean) => void;
   currentDesignElements: DesignElement[];
@@ -83,8 +82,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   setIsCheckoutModalOpen,
   customerName,
   setCustomerName,
-  customerAddress,
-  setCustomerAddress,
+  // New individual address states
   customerPhone,
   setCustomerPhone,
   paymentMethod,
@@ -107,6 +105,13 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   userRole,
 }) => {
   const [isRazorpayLoading, setIsRazorpayLoading] = useState(false);
+  // New states for individual address components
+  const [customerHouseNo, setCustomerHouseNo] = useState('');
+  const [customerVillage, setCustomerVillage] = useState('');
+  const [customerPincode, setCustomerPincode] = useState('');
+  const [customerMandal, setCustomerMandal] = useState('');
+  const [customerDistrict, setCustomerDistrict] = useState('');
+
 
   // Load Razorpay script dynamically
   useEffect(() => {
@@ -127,6 +132,14 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   const handleRazorpayPayment = async () => {
     if (!product || typeof product.price !== 'number' || product.price <= 0 || !customerName || !customerPhone) {
       showError("Product price must be a positive number, and customer name/phone are required for payment.");
+      setIsRazorpayLoading(false);
+      return;
+    }
+
+    // Construct the full address string from individual fields
+    const fullAddress = `${customerHouseNo.trim()}, ${customerVillage.trim()}, ${customerPincode.trim()}, ${customerMandal.trim()}, ${customerDistrict.trim()}`;
+    if (!customerHouseNo.trim() || !customerVillage.trim() || !customerPincode.trim() || !customerMandal.trim() || !customerDistrict.trim()) {
+      showError("All address fields are required.");
       setIsRazorpayLoading(false);
       return;
     }
@@ -192,7 +205,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
           contact: customerPhone,
         },
         notes: {
-          address: customerAddress,
+          address: fullAddress, // Use the combined address string
           product_id: product.id,
           user_id: currentSession.user?.id,
         },
@@ -215,6 +228,16 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
     } finally {
       setIsRazorpayLoading(false);
     }
+  };
+
+  // Function to handle placing order for COD, using combined address
+  const handleCODPlaceOrder = () => {
+    const fullAddress = `${customerHouseNo.trim()}, ${customerVillage.trim()}, ${customerPincode.trim()}, ${customerMandal.trim()}, ${customerDistrict.trim()}`;
+    if (!customerHouseNo.trim() || !customerVillage.trim() || !customerPincode.trim() || !customerMandal.trim() || !customerDistrict.trim()) {
+      showError("All address fields are required.");
+      return;
+    }
+    handlePlaceOrder(false); // Pass false for isDemo
   };
 
   if (!product) return null;
@@ -240,18 +263,68 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 required
               />
             </div>
+            {/* New individual address fields */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customer-address" className="text-right">
-                House No, Village, Pincode, Mandal, District
+              <Label htmlFor="customer-house-no" className="text-right">
+                House No
               </Label>
-              <Textarea
-                id="customer-address"
-                value={customerAddress}
-                onChange={(e) => setCustomerAddress(e.target.value)}
+              <Input
+                id="customer-house-no"
+                value={customerHouseNo}
+                onChange={(e) => setCustomerHouseNo(e.target.value)}
                 className="col-span-3"
                 required
               />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer-village" className="text-right">
+                Village
+              </Label>
+              <Input
+                id="customer-village"
+                value={customerVillage}
+                onChange={(e) => setCustomerVillage(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer-pincode" className="text-right">
+                Pincode
+              </Label>
+              <Input
+                id="customer-pincode"
+                value={customerPincode}
+                onChange={(e) => setCustomerPincode(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer-mandal" className="text-right">
+                Mandal
+              </Label>
+              <Input
+                id="customer-mandal"
+                value={customerMandal}
+                onChange={(e) => setCustomerMandal(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer-district" className="text-right">
+                District
+              </Label>
+              <Input
+                id="customer-district"
+                value={customerDistrict}
+                onChange={(e) => setCustomerDistrict(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            {/* End new individual address fields */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="customer-phone" className="text-right">
                 Phone
@@ -300,7 +373,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCheckoutModalOpen(false)}>Cancel</Button>
             <Button
-              onClick={() => paymentMethod === 'COD' ? handlePlaceOrder(false) : handleRazorpayPayment()}
+              onClick={() => paymentMethod === 'COD' ? handleCODPlaceOrder() : handleRazorpayPayment()}
               disabled={isPlacingOrder || isRazorpayLoading}
             >
               {isPlacingOrder || isRazorpayLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
