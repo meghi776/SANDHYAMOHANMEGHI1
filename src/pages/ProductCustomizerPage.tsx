@@ -804,7 +804,7 @@ const ProductCustomizerPage = () => {
   };
 
   const handlePlaceOrder = useCallback(async (isDemo: boolean, paymentId: string | undefined = undefined) => {
-    if (!product || !user?.id) {
+    if (!product) {
       return;
     }
 
@@ -837,52 +837,6 @@ const ProductCustomizerPage = () => {
     let orderedDesignImageUrl: string | null = null;
     
     try {
-      if (!isDemo) {
-        if (product.inventory !== null && product.inventory <= 0) {
-          throw new Error("Product is out of stock.");
-        }
-        
-        const decrementPayload = { productId: product.id, quantity: 1 };
-        console.log("Client: Invoking 'decrement-product-inventory' with payload object:", decrementPayload);
-
-        const { data: decrementData, error: decrementError } = await supabase.functions.invoke('decrement-product-inventory', {
-          body: decrementPayload,
-        });
-
-        if (decrementError) {
-          console.error("--- Edge Function Invoke Error Details (decrement-product-inventory) ---");
-          console.error("Full invokeError object:", JSON.stringify(decrementError, null, 2));
-          console.error("invokeError.context?.data (raw):", decrementError.context?.data);
-          console.error("invokeError.context?.status:", decrementError.context?.status);
-          console.error("--------------------------------------------------------------------");
-
-          let errorMessage = decrementError.message;
-
-          if (decrementError.context?.data) {
-            try {
-              const parsedErrorBody = typeof decrementError.context.data === 'string'
-                ? JSON.parse(decrementError.context.data)
-                : decrementError.context.data;
-
-              if (parsedErrorBody && typeof parsedErrorBody === 'object' && 'error' in parsedErrorBody) {
-                errorMessage = parsedErrorBody.error;
-              } else {
-                errorMessage = `Edge Function responded with status ${decrementError.context?.status || 'unknown'}. Raw response: ${JSON.stringify(parsedErrorBody)}`;
-              }
-            } catch (parseErr) {
-              console.error("Failed to parse error response body from Edge Function:", parseErr);
-              errorMessage = `Edge Function responded with status ${decrementError.context?.status || 'unknown'}. Raw response: ${decrementError.context.data}`;
-            }
-          } else if (decrementError.context?.status) {
-            errorMessage = `Edge Function returned status code: ${decrementError.context.status}`;
-          }
-          throw new Error(`Failed to update inventory: ${errorMessage}`);
-        } else if (decrementData && (decrementData as any).error) {
-          throw new Error(`Failed to update inventory: ${(decrementData as any).error}`);
-        }
-        setProduct(prev => prev ? { ...prev, inventory: (prev.inventory || 0) - 1 } : null);
-      }
-
       orderedDesignImageUrl = await captureDesignForOrder(); 
       if (!orderedDesignImageUrl) {
         throw new Error("Failed to capture design for order.");
@@ -911,26 +865,67 @@ const ProductCustomizerPage = () => {
 
       orderedDesignImageUrl = publicUrlData.publicUrl;
 
-      const { error: orderInsertError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          product_id: product.id,
-          customer_name: finalCustomerName,
-          customer_address: finalCustomerAddress,
-          customer_phone: finalCustomerPhone,
-          payment_method: finalPaymentMethod,
-          status: finalStatus,
-          total_price: finalTotalPrice,
-          ordered_design_image_url: orderedDesignImageUrl,
-          ordered_design_data: designElements,
-          type: finalOrderType,
-          ...(paymentId && { payment_id: paymentId }),
-        });
+      // Call the new Edge Function to place the order and handle inventory decrement
+      const orderPayload = {
+        user_id: user?.id || null, // Pass user.id if logged in, otherwise null
+        product_id: product.id,
+        customer_name: finalCustomerName,
+        customer_address: finalCustomerAddress,
+        customer_phone: finalCustomerPhone,
+        payment_method: finalPaymentMethod,
+        status: finalStatus,
+        total_price: finalTotalPrice,
+        ordered_design_image_url: orderedDesignImageUrl,
+        ordered_design_data: designElements, // Pass as is, Edge Function will handle JSONB
+        type: finalOrderType,
+        payment_id: paymentId || null,
+      };
 
-      if (orderInsertError) {
-        console.error("Supabase insert error:", orderInsertError);
-        throw new Error(`Failed to place order: ${orderInsertError.message}`);
+      console.log("Client: Invoking 'place-order-and-decrement-inventory' with payload:", orderPayload);
+
+      const { data: invokeData, error: invokeError } = await supabase.functions.invoke('place-order-and-decrement-inventory', {
+        body: orderPayload,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.id && { 'Authorization': `Bearer ${session?.access_token}` }), // Only send token if user is logged in
+        },
+      });
+
+      if (invokeError) {
+        console.error("--- Edge Function Invoke Error Details (place-order-and-decrement-inventory) ---");
+        console.error("Full invokeError object:", JSON.stringify(invokeError, null, 2));
+        console.error("invokeError.context?.data (raw):", invokeError.context?.data);
+        console.error("invokeError.context?.status:", invokeError.context?.status);
+        console.error("--------------------------------------------------------------------");
+
+        let errorMessage = invokeError.message;
+
+        if (invokeError.context?.data) {
+          try {
+            const parsedErrorBody = typeof invokeError.context.data === 'string'
+              ? JSON.parse(invokeError.context.data)
+              : invokeError.context.data;
+
+            if (parsedErrorBody && typeof parsedErrorBody === 'object' && 'error' in parsedErrorBody) {
+              errorMessage = parsedErrorBody.error;
+            } else {
+              errorMessage = `Edge Function responded with status ${invokeError.context?.status || 'unknown'}. Raw response: ${JSON.stringify(parsedErrorBody)}`;
+            }
+          } catch (parseErr) {
+            console.error("Failed to parse error response body from Edge Function:", parseErr);
+            errorMessage = `Edge Function responded with status ${invokeError.context?.status || 'unknown'}. Raw response: ${invokeError.context.data}`;
+          }
+        } else if (invokeError.context?.status) {
+          errorMessage = `Edge Function returned status code: ${invokeError.context.status}`;
+        }
+        throw new Error(errorMessage);
+      } else if (invokeData && (invokeData as any).error) {
+        throw new Error((invokeData as any).error);
+      }
+
+      // Update local product inventory if it was a normal order
+      if (finalOrderType === 'normal') {
+        setProduct(prev => prev ? { ...prev, inventory: (prev.inventory || 0) - 1 } : null);
       }
 
       setIsCheckoutModalOpen(false);
@@ -941,13 +936,15 @@ const ProductCustomizerPage = () => {
     } catch (err: any) {
       console.error("Error placing order:", err);
       let displayErrorMessage = err.message || "An unexpected error occurred while placing your order.";
-      if (err.message && err.message.includes("Failed to update inventory:") && err.message.includes("Not enough stock available.")) {
+      if (err.message && err.message.includes("Not enough stock available")) {
         displayErrorMessage = "Failed to place order: Not enough stock available.";
       }
+      // Display error to user
+      alert(displayErrorMessage); // Using alert for simplicity, replace with toast if preferred
     } finally {
       setIsPlacingOrder(false);
     }
-  }, [product, user, customerName, customerAddress, customerPhone, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
+  }, [product, user, session, customerName, customerAddress, customerPhone, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
 
   const handleBlurBackground = useCallback((sourceImageUrl?: string) => {
     const imageToBlur = sourceImageUrl 
@@ -1132,10 +1129,7 @@ const ProductCustomizerPage = () => {
   };
 
   const handleBuyNowClick = useCallback(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    // No login check here, proceed directly to checkout modal
     if (!product) {
       return;
     }
@@ -1151,7 +1145,7 @@ const ProductCustomizerPage = () => {
       return;
     }
     setIsCheckoutModalOpen(true);
-  }, [user, product, navigate, designElements]);
+  }, [product, designElements]);
 
   const handleAddTextElement = () => {
     if (!product) return;
