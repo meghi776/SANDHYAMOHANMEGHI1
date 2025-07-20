@@ -111,6 +111,8 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   const [customerPincode, setCustomerPincode] = useState('');
   const [customerMandal, setCustomerMandal] = useState('');
   const [customerDistrict, setCustomerDistrict] = useState('');
+  const [isPincodeLoading, setIsPincodeLoading] = useState(false);
+  const pincodeTimeoutRef = React.useRef<number | null>(null);
 
 
   // Load Razorpay script dynamically
@@ -128,6 +130,50 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
 
     loadRazorpayScript();
   }, []);
+
+  // Effect for Pincode autofill
+  useEffect(() => {
+    if (pincodeTimeoutRef.current) {
+      clearTimeout(pincodeTimeoutRef.current);
+    }
+
+    if (customerPincode.length === 6) {
+      setIsPincodeLoading(true);
+      pincodeTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await fetch(`https://api.postalpincode.in/pincode/${customerPincode}`);
+          const data = await response.json();
+
+          if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
+            const postOffice = data[0].PostOffice[0];
+            setCustomerMandal(postOffice.Block || '');
+            setCustomerDistrict(postOffice.District || '');
+          } else {
+            showError("Invalid Pincode or no data found.");
+            setCustomerMandal('');
+            setCustomerDistrict('');
+          }
+        } catch (error) {
+          console.error("Error fetching pincode data:", error);
+          showError("Failed to fetch pincode data. Please try again.");
+          setCustomerMandal('');
+          setCustomerDistrict('');
+        } finally {
+          setIsPincodeLoading(false);
+        }
+      }, 500) as unknown as number; // Debounce for 500ms
+    } else {
+      setCustomerMandal('');
+      setCustomerDistrict('');
+      setIsPincodeLoading(false);
+    }
+
+    return () => {
+      if (pincodeTimeoutRef.current) {
+        clearTimeout(pincodeTimeoutRef.current);
+      }
+    };
+  }, [customerPincode]);
 
   const handleRazorpayPayment = async () => {
     if (!product || typeof product.price !== 'number' || product.price <= 0 || !customerName || !customerPhone) {
@@ -310,6 +356,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 onChange={(e) => setCustomerMandal(e.target.value)}
                 className="col-span-3"
                 required
+                readOnly={isPincodeLoading || customerPincode.length === 6} // Make read-only if autofilled
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -322,6 +369,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 onChange={(e) => setCustomerDistrict(e.target.value)}
                 className="col-span-3"
                 required
+                readOnly={isPincodeLoading || customerPincode.length === 6} // Make read-only if autofilled
               />
             </div>
             {/* End new individual address fields */}
@@ -374,9 +422,9 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             <Button variant="outline" onClick={() => setIsCheckoutModalOpen(false)}>Cancel</Button>
             <Button
               onClick={() => paymentMethod === 'COD' ? handleCODPlaceOrder() : handleRazorpayPayment()}
-              disabled={isPlacingOrder || isRazorpayLoading}
+              disabled={isPlacingOrder || isRazorpayLoading || isPincodeLoading}
             >
-              {isPlacingOrder || isRazorpayLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isPlacingOrder || isRazorpayLoading || isPincodeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {paymentMethod === 'COD' ? 'Place Order' : 'Proceed to Pay'}
             </Button>
           </DialogFooter>
