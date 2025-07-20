@@ -115,9 +115,7 @@ const ProductCustomizerPage = () => {
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
-  const [customerAddress, setCustomerAddress] = useState(''); // This state will be updated by CustomizerModals
   const [customerPhone, setCustomerPhone] = useState('');
-  const [customerAlternativePhone, setCustomerAlternativePhone] = useState(''); // New state
   const [paymentMethod, setPaymentMethod] = useState('Razorpay'); // Default to Razorpay
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
@@ -804,34 +802,44 @@ const ProductCustomizerPage = () => {
     }
   };
 
-  const handlePlaceOrder = useCallback(async (isDemo: boolean, paymentId: string | undefined = undefined) => {
+  const handlePlaceOrder = useCallback(async (
+    isDemo: boolean,
+    customerDetails: { name: string, address: string, phone: string, alternativePhone: string | null },
+    paymentId: string | undefined = undefined
+  ) => {
     if (!product) {
+      alert("Product data is missing.");
       return;
     }
 
     const hasImageElement = designElements.some(el => el.type === 'image');
     if (!hasImageElement) {
+      alert("Please add an image to your design before placing an order.");
       return;
     }
 
     const imagesStillUploading = designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
     if (imagesStillUploading) {
+      alert("Please wait for all images to finish uploading before placing your order.");
       return;
     }
 
-    const finalCustomerName = isDemo ? demoCustomerName : customerName;
-    const finalCustomerAddress = isDemo ? demoOrderAddress : customerAddress;
-    const finalCustomerPhone = isDemo ? '0000000000' : customerPhone;
-    const finalAlternativePhone = isDemo ? null : (customerAlternativePhone.trim() === '' ? null : customerAlternativePhone.trim()); // Pass new field
+    const finalCustomerName = isDemo ? demoCustomerName : customerDetails.name;
+    const finalCustomerAddress = isDemo ? demoOrderAddress : customerDetails.address;
+    const finalCustomerPhone = isDemo ? '0000000000' : customerDetails.phone;
+    const finalAlternativePhone = isDemo ? null : customerDetails.alternativePhone;
     const finalPaymentMethod = isDemo ? 'Demo' : paymentMethod;
     const finalStatus = isDemo ? 'Demo' : (paymentMethod === 'Prepaid' ? 'Processing' : 'Pending');
     const finalTotalPrice = isDemo ? parseFloat(demoOrderPrice) : product.price;
     const finalOrderType = isDemo ? 'demo' : 'normal';
 
-    if (!isDemo && (!finalCustomerName.trim() || !finalCustomerAddress.trim() || !finalCustomerPhone.trim())) {
+    // Client-side validation before invoking Edge Function
+    if (!finalCustomerName.trim() || !finalCustomerAddress.trim() || !finalCustomerPhone.trim()) {
+      alert("Customer name, address, and phone are required.");
       return;
     }
-    if (isDemo && (!finalCustomerName.trim() || !finalCustomerAddress.trim() || isNaN(finalTotalPrice))) {
+    if (isNaN(finalTotalPrice) || finalTotalPrice <= 0) {
+      alert("Invalid product price. Please ensure the product has a valid price.");
       return;
     }
 
@@ -841,7 +849,7 @@ const ProductCustomizerPage = () => {
     try {
       orderedDesignImageUrl = await captureDesignForOrder(); 
       if (!orderedDesignImageUrl) {
-        throw new Error("Failed to capture design for order.");
+        throw new Error("Failed to capture design for order. Please try again.");
       }
 
       const blob = await (await fetch(orderedDesignImageUrl)).blob();
@@ -958,7 +966,7 @@ const ProductCustomizerPage = () => {
     } finally {
       setIsPlacingOrder(false);
     }
-  }, [product, user, session, customerName, customerAddress, customerPhone, customerAlternativePhone, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
+  }, [product, user, session, customerName, customerPhone, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
 
   const handleBlurBackground = useCallback((sourceImageUrl?: string) => {
     const imageToBlur = sourceImageUrl 
@@ -1145,17 +1153,21 @@ const ProductCustomizerPage = () => {
   const handleBuyNowClick = useCallback(() => {
     // No login check here, proceed directly to checkout modal
     if (!product) {
+      alert("Product data is missing.");
       return;
     }
     if (product.inventory !== null && product.inventory <= 0) {
+      alert("This product is out of stock.");
       return;
     }
     const hasImageElement = designElements.some(el => el.type === 'image');
     if (!hasImageElement) {
+      alert("Please add an image to your design before placing an order.");
       return;
     }
     const imagesStillUploading = designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
     if (imagesStillUploading) {
+      alert("Please wait for all images to finish uploading before placing your order.");
       return;
     }
     setIsCheckoutModalOpen(true);
@@ -1528,12 +1540,8 @@ const ProductCustomizerPage = () => {
         setIsCheckoutModalOpen={setIsCheckoutModalOpen}
         customerName={customerName}
         setCustomerName={setCustomerName}
-        customerAddress={customerAddress} // Pass customerAddress
-        setCustomerAddress={setCustomerAddress} // Pass setCustomerAddress
         customerPhone={customerPhone}
         setCustomerPhone={setCustomerPhone}
-        customerAlternativePhone={customerAlternativePhone} // Pass new state
-        setCustomerAlternativePhone={setCustomerAlternativePhone} // Pass new state setter
         paymentMethod={paymentMethod}
         setPaymentMethod={setPaymentMethod}
         isPlacingOrder={isPlacingOrder}

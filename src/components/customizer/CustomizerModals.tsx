@@ -47,16 +47,12 @@ interface CustomizerModalsProps {
   setIsCheckoutModalOpen: (isOpen: boolean) => void;
   customerName: string;
   setCustomerName: (name: string) => void;
-  customerAddress: string; // New prop
-  setCustomerAddress: (address: string) => void; // New prop
   customerPhone: string;
   setCustomerPhone: (phone: string) => void;
-  customerAlternativePhone: string; // New prop
-  setCustomerAlternativePhone: (phone: string) => void; // New prop
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
   isPlacingOrder: boolean;
-  handlePlaceOrder: (isDemo: boolean, paymentId?: string) => void; // Added paymentId parameter
+  handlePlaceOrder: (isDemo: boolean, customerDetails: { name: string, address: string, phone: string, alternativePhone: string | null }, paymentId?: string) => void; // Updated signature
   isDemoOrderModalOpen: boolean;
   setIsDemoOrderModalOpen: (isOpen: boolean) => void;
   demoCustomerName: string;
@@ -86,12 +82,8 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   setIsCheckoutModalOpen,
   customerName,
   setCustomerName,
-  customerAddress, // Destructure new prop
-  setCustomerAddress, // Destructure new prop
   customerPhone,
   setCustomerPhone,
-  customerAlternativePhone, // Destructure new prop
-  setCustomerAlternativePhone, // Destructure new prop
   paymentMethod,
   setPaymentMethod,
   isPlacingOrder,
@@ -118,6 +110,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   const [customerPincode, setCustomerPincode] = useState('');
   const [customerMandal, setCustomerMandal] = useState('');
   const [customerDistrict, setCustomerDistrict] = useState('');
+  const [customerAlternativePhone, setCustomerAlternativePhone] = useState(''); // New state
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
   const [isPincodeValid, setIsPincodeValid] = useState(false); // New state for pincode validity
   const pincodeTimeoutRef = React.useRef<number | null>(null);
@@ -197,7 +190,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
 
   const handleRazorpayPayment = async () => {
     console.log("CustomizerModals: handleRazorpayPayment called.");
-    if (!product || product.price === null || typeof product.price !== 'number' || product.price <= 0 || !customerName || !customerPhone) {
+    if (!product || product.price === null || typeof product.price !== 'number' || product.price <= 0 || !customerName.trim() || !customerPhone.trim()) {
       showError("Product price must be a positive number, and customer name/phone are required for payment.");
       setIsRazorpayLoading(false);
       return;
@@ -286,9 +279,13 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
         order_id: order_id,
         handler: async (response: any) => {
           // Payment successful, now place the order in your DB
-          // Set the customerAddress state in the parent component (ProductCustomizerPage)
-          setCustomerAddress(fullAddress); // Add this line
-          await handlePlaceOrder(false, response.razorpay_payment_id);
+          const customerDetails = {
+            name: customerName,
+            address: fullAddress,
+            phone: customerPhone,
+            alternativePhone: customerAlternativePhone.trim() === '' ? null : customerAlternativePhone.trim(),
+          };
+          await handlePlaceOrder(false, customerDetails, response.razorpay_payment_id);
         },
         prefill: {
           name: customerName,
@@ -325,6 +322,10 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   // Function to handle placing order for COD, using combined address
   const handleCODPlaceOrder = () => {
     console.log("CustomizerModals: handleCODPlaceOrder called.");
+    if (!customerName.trim() || !customerPhone.trim()) {
+      showError("Customer name and phone are required.");
+      return;
+    }
     const fullAddress = `${customerHouseNo.trim()}, ${customerVillage.trim()}, ${customerPincode.trim()}, ${customerMandal.trim()}, ${customerDistrict.trim()}`;
     if (!customerHouseNo.trim() || !customerVillage.trim() || !customerPincode.trim() || !customerMandal.trim() || !customerDistrict.trim()) {
       showError("All address fields are required.");
@@ -334,8 +335,23 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       showError("Please enter a valid pincode.");
       return;
     }
-    setCustomerAddress(fullAddress); // Set the customerAddress state in the parent component (ProductCustomizerPage)
-    handlePlaceOrder(false); // Pass false for isDemo
+    const customerDetails = {
+      name: customerName,
+      address: fullAddress,
+      phone: customerPhone,
+      alternativePhone: customerAlternativePhone.trim() === '' ? null : customerAlternativePhone.trim(),
+    };
+    handlePlaceOrder(false, customerDetails); // Pass false for isDemo
+  };
+
+  const handleConfirmDemoOrder = () => {
+    const customerDetails = {
+      name: demoCustomerName,
+      address: demoOrderAddress,
+      phone: '0000000000', // Dummy phone for demo
+      alternativePhone: null,
+    };
+    handlePlaceOrder(true, customerDetails);
   };
 
   if (!product) return null;
@@ -549,7 +565,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDemoOrderModalOpen(false)}>Cancel</Button>
-            <Button onClick={() => handlePlaceOrder(true)} disabled={isPlacingOrder}>
+            <Button onClick={handleConfirmDemoOrder} disabled={isPlacingOrder}>
               {isPlacingOrder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Confirm Demo Order
             </Button>
