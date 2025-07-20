@@ -14,7 +14,12 @@ serve(async (req) => {
 
   let payload;
   try {
-    payload = await req.json();
+    const bodyText = await req.text();
+    console.log("Edge Function: Received raw body text:", bodyText);
+    if (!bodyText) {
+      throw new Error("Request body is empty.");
+    }
+    payload = JSON.parse(bodyText);
   } catch (e) {
     console.error("Edge Function: Error parsing JSON body:", e);
     return new Response(JSON.stringify({ error: 'Invalid or empty request body.' }), {
