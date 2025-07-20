@@ -47,6 +47,8 @@ interface CustomizerModalsProps {
   setIsCheckoutModalOpen: (isOpen: boolean) => void;
   customerName: string;
   setCustomerName: (name: string) => void;
+  customerAddress: string; // New prop
+  setCustomerAddress: (address: string) => void; // New prop
   customerPhone: string;
   setCustomerPhone: (phone: string) => void;
   customerAlternativePhone: string; // New prop
@@ -84,6 +86,8 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   setIsCheckoutModalOpen,
   customerName,
   setCustomerName,
+  customerAddress, // Destructure new prop
+  setCustomerAddress, // Destructure new prop
   customerPhone,
   setCustomerPhone,
   customerAlternativePhone, // Destructure new prop
@@ -270,6 +274,8 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
         order_id: order_id,
         handler: async (response: any) => {
           // Payment successful, now place the order in your DB
+          // Set the customerAddress state in the parent component (ProductCustomizerPage)
+          setCustomerAddress(fullAddress); // Add this line
           await handlePlaceOrder(false, response.razorpay_payment_id);
         },
         prefill: {
@@ -315,6 +321,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       showError("Please enter a valid pincode.");
       return;
     }
+    setCustomerAddress(fullAddress); // Set the customerAddress state in the parent component (ProductCustomizerPage)
     handlePlaceOrder(false); // Pass false for isDemo
   };
 

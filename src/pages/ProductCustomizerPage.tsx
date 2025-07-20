@@ -115,7 +115,7 @@ const ProductCustomizerPage = () => {
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
-  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerAddress, setCustomerAddress] = useState(''); // This state will be updated by CustomizerModals
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAlternativePhone, setCustomerAlternativePhone] = useState(''); // New state
   const [paymentMethod, setPaymentMethod] = useState('Razorpay'); // Default to Razorpay
@@ -501,7 +501,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -1528,6 +1528,8 @@ const ProductCustomizerPage = () => {
         setIsCheckoutModalOpen={setIsCheckoutModalOpen}
         customerName={customerName}
         setCustomerName={setCustomerName}
+        customerAddress={customerAddress} // Pass customerAddress
+        setCustomerAddress={setCustomerAddress} // Pass setCustomerAddress
         customerPhone={customerPhone}
         setCustomerPhone={setCustomerPhone}
         customerAlternativePhone={customerAlternativePhone} // Pass new state
