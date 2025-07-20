@@ -12,6 +12,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Clone the request to inspect body without consuming it for req.json()
+  const clonedReq = req.clone();
+  let rawBodyText = '';
+  try {
+    rawBodyText = await clonedReq.text();
+    console.log("Edge Function: Raw request body received:", rawBodyText);
+  } catch (e) {
+    console.error("Edge Function: Error reading raw request body text:", e);
+  }
+
   let payload;
   try {
     payload = await req.json();

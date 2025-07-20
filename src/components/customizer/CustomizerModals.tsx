@@ -196,7 +196,8 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   }, [customerPincode]);
 
   const handleRazorpayPayment = async () => {
-    if (!product || typeof product.price !== 'number' || product.price <= 0 || !customerName || !customerPhone) {
+    console.log("handleRazorpayPayment called. Current paymentMethod:", paymentMethod);
+    if (!product || product.price === null || typeof product.price !== 'number' || product.price <= 0 || !customerName || !customerPhone) {
       showError("Product price must be a positive number, and customer name/phone are required for payment.");
       setIsRazorpayLoading(false);
       return;
@@ -237,12 +238,20 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
         receipt: `receipt_${Date.now()}`,
       };
 
-      console.log("CustomizerModals: Preparing payload for Razorpay order:", payloadToSend);
-      console.log("CustomizerModals: Type of product.price:", typeof product.price);
-      console.log("CustomizerModals: Value of product.price:", product.price);
+      // Explicit check for payloadToSend content before stringifying
+      if (typeof payloadToSend.amount !== 'number' || payloadToSend.amount <= 0 || !payloadToSend.currency || !payloadToSend.receipt) {
+        showError("Internal error: Payment payload is incomplete.");
+        setIsRazorpayLoading(false);
+        console.error("Attempted to send invalid payload:", payloadToSend);
+        return;
+      }
+
+      console.log("Payload to send to Razorpay Edge Function:", payloadToSend);
+      const stringifiedBody = JSON.stringify(payloadToSend);
+      console.log("Stringified payload body:", stringifiedBody);
 
       const { data, error: invokeError } = await supabase.functions.invoke('create-razorpay-order', {
-        body: JSON.stringify(payloadToSend), // Explicitly stringify
+        body: stringifiedBody, // Use the explicitly stringified body
         headers: {
           'Content-Type': 'application/json', // Explicitly set Content-Type
           'Authorization': `Bearer ${currentSession.access_token}`,
@@ -315,6 +324,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
 
   // Function to handle placing order for COD, using combined address
   const handleCODPlaceOrder = () => {
+    console.log("handleCODPlaceOrder called. Current paymentMethod:", paymentMethod);
     const fullAddress = `${customerHouseNo.trim()}, ${customerVillage.trim()}, ${customerPincode.trim()}, ${customerMandal.trim()}, ${customerDistrict.trim()}`;
     if (!customerHouseNo.trim() || !customerVillage.trim() || !customerPincode.trim() || !customerMandal.trim() || !customerDistrict.trim()) {
       showError("All address fields are required.");
@@ -444,6 +454,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                       return;
                     }
                     setPaymentMethod('Razorpay');
+                    console.log("Payment method set to Razorpay.");
                   }}
                   className="flex-1"
                   disabled={isRazorpayLoading || !user} // Disable if not logged in
@@ -453,7 +464,10 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 <Button
                   type="button"
                   variant={paymentMethod === 'COD' ? 'default' : 'outline'}
-                  onClick={() => setPaymentMethod('COD')}
+                  onClick={() => {
+                    setPaymentMethod('COD');
+                    console.log("Payment method set to COD.");
+                  }}
                   className="flex-1"
                   disabled={isRazorpayLoading}
                 >
@@ -471,7 +485,16 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCheckoutModalOpen(false)}>Cancel</Button>
             <Button
-              onClick={() => paymentMethod === 'COD' ? handleCODPlaceOrder() : handleRazorpayPayment()}
+              onClick={() => {
+                console.log("Final checkout button clicked. Current paymentMethod state:", paymentMethod);
+                if (paymentMethod === 'COD') {
+                  handleCODPlaceOrder();
+                } else if (paymentMethod === 'Razorpay') {
+                  handleRazorpayPayment();
+                } else {
+                  showError("Please select a payment method.");
+                }
+              }}
               disabled={isPlacingOrder || isRazorpayLoading || isPincodeLoading || !isPincodeValid || (paymentMethod === 'Razorpay' && !user)}
             >
               {isPlacingOrder || isRazorpayLoading || isPincodeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
