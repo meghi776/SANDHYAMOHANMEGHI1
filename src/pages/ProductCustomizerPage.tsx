@@ -116,7 +116,7 @@ const ProductCustomizerPage = () => {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Razorpay'); // Default to Razorpay
+  const [paymentMethod, setPaymentMethod] = useState('Razorpay');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   const [mockupOverlayData, setMockupOverlayData] = useState<MockupData | null>(null);
@@ -135,14 +135,14 @@ const ProductCustomizerPage = () => {
   const resizeState = useRef<{
     mode: 'none' | 'resizing';
     handle: 'br';
-    startX: number; // Unscaled clientX
-    startY: number; // Unscaled clientY
+    startX: number;
+    startY: number;
     initialWidth: number;
     initialHeight: number;
     initialFontSize: number;
-    initialElementX: number; // Element's X at start of resize
-    initialElementY: number; // Element's Y at start of resize
-    initialDiagonalDistance: number; // Distance from element's origin to startX, startY
+    initialElementX: number;
+    initialElementY: number;
+    initialDiagonalDistance: number;
     activeElementId: string | null;
   }>({
     mode: 'none',
@@ -285,7 +285,6 @@ const ProductCustomizerPage = () => {
   }, [productId, setDemoOrderDetails]);
 
   useEffect(() => {
-    // Fetch user role
     const fetchUserRole = async () => {
       if (user) {
         const { data, error } = await supabase
@@ -347,22 +346,18 @@ const ProductCustomizerPage = () => {
     );
   }, []);
 
-  const deleteElement = async (id: string) => { // Made async to handle Supabase deletion
+  const deleteElement = async (id: string) => {
     setDesignElements(prev => {
       const elementToDelete = prev.find(el => el.id === id);
       if (elementToDelete) {
-        // Revoke blob URL if it's a temporary local image
         if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('blob:')) {
           URL.revokeObjectURL(el.value);
         }
-        // If it's an uploaded image, attempt to delete from Supabase storage
         if (elementToDelete.type === 'image' && elementToDelete.value.startsWith('https://')) {
           const url = new URL(elementToDelete.value);
-          // Assuming the bucket is 'order-mockups' and subfolder is 'user-uploads'
-          // This needs to be robust if paths vary
           const pathSegments = url.pathname.split('/');
-          const bucketName = pathSegments[2]; // e.g., 'order-mockups'
-          const filePath = pathSegments.slice(3).join('/'); // e.g., 'user-uploads/image.png'
+          const bucketName = pathSegments[2];
+          const filePath = pathSegments.slice(3).join('/');
           
           if (bucketName && filePath) {
             deleteFileFromSupabase(filePath, bucketName)
@@ -626,13 +621,13 @@ const ProductCustomizerPage = () => {
           width: newWidth,
           fontSize: newFontSize,
         });
-      } else { // This is the image resizing part
+      } else {
         const currentDiagonalDistance = Math.sqrt(
           Math.pow(currentUnscaledX - initialElementX, 2) +
           Math.pow(currentUnscaledY - initialElementY, 2)
         );
 
-        if (initialDiagonalDistance === 0) return; // Avoid division by zero
+        if (initialDiagonalDistance === 0) return;
 
         const scale = currentDiagonalDistance / initialDiagonalDistance;
 
@@ -673,13 +668,13 @@ const ProductCustomizerPage = () => {
           width: newWidth,
           fontSize: newFontSize,
         });
-      } else { // This is the image resizing part
+      } else {
         const currentDiagonalDistance = Math.sqrt(
           Math.pow(currentUnscaledX - initialElementX, 2) +
           Math.pow(currentUnscaledY - initialElementY, 2)
         );
 
-        if (initialDiagonalDistance === 0) return; // Avoid division by zero
+        if (initialDiagonalDistance === 0) return;
 
         const scale = currentDiagonalDistance / initialDiagonalDistance;
 
@@ -807,6 +802,13 @@ const ProductCustomizerPage = () => {
     customerDetails: { name: string, address: string, phone: string, alternativePhone: string | null },
     paymentId: string | undefined = undefined
   ) => {
+    console.log("handlePlaceOrder called.");
+    console.log("isDemo:", isDemo);
+    console.log("customerDetails:", customerDetails);
+    console.log("paymentId:", paymentId);
+    console.log("Current product state:", product);
+    console.log("Current designElements state:", designElements);
+
     if (!product) {
       alert("Product data is missing.");
       return;
@@ -833,7 +835,6 @@ const ProductCustomizerPage = () => {
     const finalTotalPrice = isDemo ? parseFloat(demoOrderPrice) : product.price;
     const finalOrderType = isDemo ? 'demo' : 'normal';
 
-    // Client-side validation before invoking Edge Function
     if (!finalCustomerName.trim() || !finalCustomerAddress.trim() || !finalCustomerPhone.trim()) {
       alert("Customer name, address, and phone are required.");
       return;
@@ -890,23 +891,24 @@ const ProductCustomizerPage = () => {
         payment_id: paymentId || null,
       };
 
+      console.log("Order payload being sent to Edge Function:", orderPayload); // Log the final payload
+
       let invokeResult;
-      if (user) { // Logged-in user
+      if (user) {
           console.log("Client: Logged-in user placing order via 'place-order-and-decrement-inventory'.");
           invokeResult = await supabase.functions.invoke('place-order-and-decrement-inventory', {
-              body: { ...orderPayload, user_id: user.id }, // Pass user_id explicitly
+              body: { ...orderPayload, user_id: user.id },
               headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${session?.access_token}`,
               },
           });
-      } else { // Guest user
+      } else {
           console.log("Client: Guest user placing order via 'guest-register-and-order'.");
           invokeResult = await supabase.functions.invoke('guest-register-and-order', {
-              body: orderPayload, // No user_id needed here, function handles it
+              body: orderPayload,
               headers: {
                   'Content-Type': 'application/json',
-                  // No Authorization header for guest function, it uses service role key
               },
           });
       }
@@ -945,7 +947,6 @@ const ProductCustomizerPage = () => {
         throw new Error((invokeData as any).error);
       }
 
-      // Update local product inventory if it was a normal order
       if (finalOrderType === 'normal') {
         setProduct(prev => prev ? { ...prev, inventory: (prev.inventory || 0) - 1 } : null);
       }
@@ -961,8 +962,7 @@ const ProductCustomizerPage = () => {
       if (err.message && err.message.includes("Not enough stock available")) {
         displayErrorMessage = "Failed to place order: Not enough stock available.";
       }
-      // Display error to user
-      alert(displayErrorMessage); // Using alert for simplicity, replace with toast if preferred
+      alert(displayErrorMessage);
     } finally {
       setIsPlacingOrder(false);
     }
@@ -1151,7 +1151,6 @@ const ProductCustomizerPage = () => {
   };
 
   const handleBuyNowClick = useCallback(() => {
-    // No login check here, proceed directly to checkout modal
     if (!product) {
       alert("Product data is missing.");
       return;
@@ -1242,7 +1241,6 @@ const ProductCustomizerPage = () => {
     setBlurredBackgroundImageUrl(null);
   };
 
-  // isBuyNowDisabled now also considers if Razorpay is selected by a guest
   const isBuyNowDisabled = loading || isPlacingOrder || (product && product.inventory !== null && product.inventory <= 0) || designElements.filter(el => el.type === 'image').length === 0 || designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
 
   const currentSelectedElement = designElements.find(el => el.id === selectedElementId) || null;
@@ -1255,7 +1253,6 @@ const ProductCustomizerPage = () => {
         onDeleteElement={deleteElement}
       />
       
-      {/* This div now acts as the main scrollable content area */}
       <div className="relative flex-1 flex flex-col md:flex-row overflow-hidden pt-14 pb-65 z-1">
         {loading && (
           <div className="flex-1 flex items-center justify-center">
@@ -1495,7 +1492,7 @@ const ProductCustomizerPage = () => {
               {blurredBackgroundImageUrl && (
                 <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={handleClearBlur}>
                   <XCircle className="h-5 w-5" />
-                  <span className="text-xs">Delete Blur</span> {/* Changed text here */}
+                  <span className="text-xs">Delete Blur</span>
                 </Button>
               )}
               <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={handleClearBackground}>
@@ -1559,7 +1556,7 @@ const ProductCustomizerPage = () => {
         currentBlurredBackgroundImageUrl={blurredBackgroundImageUrl}
         onLoadDesign={loadDesign}
         canvasContentRef={canvasContentRef}
-        user={user} // Pass user object to CustomizerModals
+        user={user}
       />
     </div>
   );

@@ -341,6 +341,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       phone: customerPhone,
       alternativePhone: customerAlternativePhone.trim() === '' ? null : customerAlternativePhone.trim(),
     };
+    console.log("CustomizerModals: Calling handlePlaceOrder for COD with customerDetails:", customerDetails); // Log before calling
     handlePlaceOrder(false, customerDetails); // Pass false for isDemo
   };
 
@@ -351,6 +352,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       phone: '0000000000', // Dummy phone for demo
       alternativePhone: null,
     };
+    console.log("CustomizerModals: Calling handlePlaceOrder for Demo with customerDetails:", customerDetails); // Log before calling
     handlePlaceOrder(true, customerDetails);
   };
 

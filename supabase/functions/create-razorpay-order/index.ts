@@ -7,40 +7,29 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log(`Edge Function: create-razorpay-order invoked. Method: ${req.method}`); // Added log
-  // Handle CORS preflight requests
+  console.log(`Edge Function: create-razorpay-order invoked. Method: ${req.method}`);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   let payload;
   try {
-    // Clone the request to inspect body without consuming it for req.json()
-    const clonedReq = req.clone();
-    let rawBodyText = '';
-    try {
-      rawBodyText = await clonedReq.text();
-      console.log("Edge Function: Raw request body received:", rawBodyText);
-    } catch (e) {
-      console.error("Edge Function: Error reading raw request body text:", e);
-    }
+    payload = await req.json(); // Directly parse the JSON body
+    console.log("Edge Function: Parsed payload:", payload); // Log the parsed payload
 
-    payload = await req.json();
-    // Add a check here: if payload is empty object or null after parsing
     if (!payload || Object.keys(payload).length === 0) {
-      console.error("Edge Function: Received empty or null JSON payload.");
+      console.error("Edge Function: Received empty or null JSON payload after parsing.");
       return new Response(JSON.stringify({ error: 'Empty or invalid JSON payload received.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
     }
   } catch (e) {
-    // Catch JSON parsing errors specifically
     if (e instanceof SyntaxError) {
-      console.error("Edge Function: JSON parsing error - Invalid or empty request body:", e);
+      console.error("Edge Function: JSON parsing error - Invalid or empty request body:", e.message);
       return new Response(JSON.stringify({ error: 'Invalid or empty request body. Please ensure all required fields are sent.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400, // Bad Request
+        status: 400,
       });
     }
     console.error("Edge Function: Unexpected error during request body parsing:", e);
@@ -50,7 +39,7 @@ serve(async (req) => {
     });
   }
 
-  const { amount, currency, receipt } = payload; // Use payload here
+  const { amount, currency, receipt } = payload;
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -68,7 +57,6 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Authenticate the invoker (ensure they are logged in)
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization header missing.' }), {
@@ -88,7 +76,6 @@ serve(async (req) => {
       });
     }
 
-    // Validate payload fields more strictly
     if (typeof amount !== 'number' || amount <= 0 || !currency || typeof currency !== 'string' || !receipt || typeof receipt !== 'string') {
       console.error("Edge Function: Invalid or missing required fields in payload:", { amount, currency, receipt });
       return new Response(JSON.stringify({ error: 'Amount (positive number), currency, and receipt are required.' }), {
@@ -97,12 +84,11 @@ serve(async (req) => {
       });
     }
 
-    // Create Razorpay order
     const orderPayload = {
-      amount: amount * 100, // Razorpay expects amount in smallest currency unit (paise)
+      amount: amount * 100,
       currency: currency,
       receipt: receipt,
-      payment_capture: 1, // Auto capture payment
+      payment_capture: 1,
     };
 
     const authString = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
@@ -131,7 +117,7 @@ serve(async (req) => {
       order_id: razorpayOrder.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
-      key_id: razorpayKeyId, // Send key_id back to client for checkout
+      key_id: razorpayKeyId,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
