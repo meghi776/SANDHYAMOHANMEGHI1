@@ -66,7 +66,7 @@ const Login = () => {
           <p className="text-sm text-muted-foreground">
             Don't have an account?{' '}
             <Link to="/signup" className="underline text-primary font-medium">
-              Sign up with mobile
+              Sign up / Sign in with mobile
             </Link>
           </p>
         </CardFooter>
