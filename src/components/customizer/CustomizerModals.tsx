@@ -190,8 +190,13 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
 
   const handleRazorpayPayment = async () => {
     console.log("CustomizerModals: handleRazorpayPayment called.");
-    if (!product || product.price === null || typeof product.price !== 'number' || product.price <= 0 || !customerName.trim() || !customerPhone.trim()) {
-      showError("Product price must be a positive number, and customer name/phone are required for payment.");
+    if (!product || product.price === null || typeof product.price !== 'number' || product.price <= 0) {
+      showError("Product price must be a positive number for payment.");
+      setIsRazorpayLoading(false);
+      return;
+    }
+    if (!customerName.trim() || !customerPhone.trim()) {
+      showError("Customer name and phone are required for payment.");
       setIsRazorpayLoading(false);
       return;
     }
@@ -262,7 +267,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             }
           } catch (e) { /* ignore */ }
         }
-        showError(`Payment initiation failed: ${errorMessage}`);
+        showError(`Payment initiation failed: ${errorMessage}. Please check your Razorpay API keys in Supabase secrets.`); // More specific error
         setIsRazorpayLoading(false);
         return;
       }

@@ -35,6 +35,7 @@ import CustomizerModals from '@/components/customizer/CustomizerModals';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import DesignerPageHeader from '@/components/DesignerPageHeader';
 import imageCompression from 'browser-image-compression';
+import { showError as showToastError } from '@/utils/toast'; // Import showError as showToastError to avoid conflict
 
 interface Product {
   id: string;
@@ -494,7 +495,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -810,19 +811,19 @@ const ProductCustomizerPage = () => {
     console.log("Current designElements state:", designElements);
 
     if (!product) {
-      alert("Product data is missing.");
+      showToastError("Product data is missing. Cannot place order.");
       return;
     }
 
     const hasImageElement = designElements.some(el => el.type === 'image');
     if (!hasImageElement) {
-      alert("Please add an image to your design before placing an order.");
+      showToastError("Please add an image to your design before placing an order.");
       return;
     }
 
     const imagesStillUploading = designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
     if (imagesStillUploading) {
-      alert("Please wait for all images to finish uploading before placing your order.");
+      showToastError("Please wait for all images to finish uploading before placing your order.");
       return;
     }
 
@@ -836,11 +837,11 @@ const ProductCustomizerPage = () => {
     const finalOrderType = isDemo ? 'demo' : 'normal';
 
     if (!finalCustomerName.trim() || !finalCustomerAddress.trim() || !finalCustomerPhone.trim()) {
-      alert("Customer name, address, and phone are required.");
+      showToastError("Customer name, address, and phone are required.");
       return;
     }
     if (isNaN(finalTotalPrice) || finalTotalPrice <= 0) {
-      alert("Invalid product price. Please ensure the product has a valid price.");
+      showToastError("Invalid product price. Please ensure the product has a valid price.");
       return;
     }
 
@@ -962,7 +963,7 @@ const ProductCustomizerPage = () => {
       if (err.message && err.message.includes("Not enough stock available")) {
         displayErrorMessage = "Failed to place order: Not enough stock available.";
       }
-      alert(displayErrorMessage);
+      showToastError(displayErrorMessage); // Use showToastError
     } finally {
       setIsPlacingOrder(false);
     }
@@ -1152,21 +1153,21 @@ const ProductCustomizerPage = () => {
 
   const handleBuyNowClick = useCallback(() => {
     if (!product) {
-      alert("Product data is missing.");
+      showToastError("Product data is missing.");
       return;
     }
     if (product.inventory !== null && product.inventory <= 0) {
-      alert("This product is out of stock.");
+      showToastError("This product is out of stock.");
       return;
     }
     const hasImageElement = designElements.some(el => el.type === 'image');
     if (!hasImageElement) {
-      alert("Please add an image to your design before placing an order.");
+      showToastError("Please add an image to your design before placing an order.");
       return;
     }
     const imagesStillUploading = designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
     if (imagesStillUploading) {
-      alert("Please wait for all images to finish uploading before placing your order.");
+      showToastError("Please wait for all images to finish uploading before placing your order.");
       return;
     }
     setIsCheckoutModalOpen(true);
