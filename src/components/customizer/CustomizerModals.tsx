@@ -237,11 +237,14 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
         receipt: `receipt_${Date.now()}`,
       };
 
-      console.log("CustomizerModals: Payload object being sent to create-razorpay-order:", payloadToSend);
-      // Removed manual JSON.stringify and Content-Type header
+      console.log("CustomizerModals: Preparing payload for Razorpay order:", payloadToSend);
+      console.log("CustomizerModals: Type of product.price:", typeof product.price);
+      console.log("CustomizerModals: Value of product.price:", product.price);
+
       const { data, error: invokeError } = await supabase.functions.invoke('create-razorpay-order', {
-        body: payloadToSend, // Pass the object directly
+        body: JSON.stringify(payloadToSend), // Explicitly stringify
         headers: {
+          'Content-Type': 'application/json', // Explicitly set Content-Type
           'Authorization': `Bearer ${currentSession.access_token}`,
         },
       });
