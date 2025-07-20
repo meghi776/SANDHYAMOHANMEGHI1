@@ -230,7 +230,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="customer-name" className="text-right">
-                Name
+                Full Name
               </Label>
               <Input
                 id="customer-name"
@@ -242,7 +242,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="customer-address" className="text-right">
-                Address
+                House No, Village, Pincode, Mandal, District
               </Label>
               <Textarea
                 id="customer-address"
@@ -319,7 +319,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="demo-name" className="text-right">
-                Name
+                Full Name
               </Label>
               <Input
                 id="demo-name"
@@ -346,7 +346,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="demo-address" className="text-right">
-                Address
+                House No, Village, Pincode, Mandal, District
               </Label>
               <Textarea
                 id="demo-address"
