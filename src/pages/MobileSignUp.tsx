@@ -10,12 +10,11 @@ import { showSuccess, showError } from '@/utils/toast';
 
 const MobileSignUp = () => {
   const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'enter-mobile' | 'enter-otp'>('enter-mobile');
   const navigate = useNavigate();
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -24,43 +23,24 @@ const MobileSignUp = () => {
       setLoading(false);
       return;
     }
+    if (password.length < 6) {
+      showError('Password should be at least 6 characters.');
+      setLoading(false);
+      return;
+    }
 
-    const { error } = await supabase.auth.signInWithOtp({
+    const { data, error } = await supabase.auth.signUp({
       phone: `+91${mobile}`,
+      password: password,
     });
 
     if (error) {
       showError(error.message);
+    } else if (data.user) {
+      showSuccess('Account created successfully! Please sign in.');
+      navigate('/login');
     } else {
-      showSuccess('OTP sent to your mobile number.');
-      setStep('enter-otp');
-    }
-    setLoading(false);
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    if (otp.length !== 6) {
-        showError('Please enter a valid 6-digit OTP.');
-        setLoading(false);
-        return;
-    }
-
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: `+91${mobile}`,
-      token: otp,
-      type: 'sms',
-    });
-
-    if (error) {
-      showError(error.message);
-    } else if (data.session) {
-      showSuccess('Signed in successfully!');
-      navigate('/');
-    } else {
-      showError('Could not verify OTP. Please try again.');
+        showError('An unknown error occurred during sign up. Please try again.');
     }
     setLoading(false);
   };
@@ -70,69 +50,50 @@ const MobileSignUp = () => {
       <Card className="w-full max-w-md mx-auto shadow-lg rounded-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-            {step === 'enter-mobile' ? 'Sign Up / Sign In with Mobile' : 'Verify OTP'}
+            Sign Up with Mobile
           </CardTitle>
           <CardDescription>
-            {step === 'enter-mobile' 
-              ? 'Enter your mobile number to get started.'
-              : `Enter the 6-digit OTP sent to +91${mobile}`}
+            Enter your mobile number and a password to create an account.
           </CardDescription>
         </CardHeader>
-        {step === 'enter-mobile' ? (
-          <form onSubmit={handleSendOtp}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="mobile">Mobile Number</Label>
-                <Input
-                  id="mobile"
-                  type="tel"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                  placeholder="10-digit mobile number"
-                  required
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send OTP
-              </Button>
-              <div className="text-center text-sm">
-                Prefer to use email?{' '}
-                <Link to="/login" className="underline">
-                  Sign in with Email
-                </Link>
-              </div>
-            </CardFooter>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOtp}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="otp">OTP</Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="6-digit OTP"
-                  required
-                  maxLength={6}
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Verify OTP & Continue
-              </Button>
-              <Button variant="link" onClick={() => setStep('enter-mobile')}>
-                Change mobile number
-              </Button>
-            </CardFooter>
-          </form>
-        )}
+        <form onSubmit={handleSignUp}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="mobile">Mobile Number</Label>
+              <Input
+                id="mobile"
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="10-digit mobile number"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a password"
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Sign Up
+            </Button>
+            <div className="text-center text-sm">
+              Already have an account?{' '}
+              <Link to="/login" className="underline">
+                Sign In
+              </Link>
+            </div>
+          </CardFooter>
+        </form>
       </Card>
     </div>
   );
