@@ -311,85 +311,20 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             <DialogTitle>Checkout</DialogTitle>
             <DialogDescription>Please provide your details to complete the order.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customer-name" className="text-right">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customer-name">
                 Full Name
               </Label>
               <Input
                 id="customer-name"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="col-span-3"
                 required
               />
             </div>
-            {/* New individual address fields */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customer-house-no" className="text-right">
-                House No
-              </Label>
-              <Input
-                id="customer-house-no"
-                value={customerHouseNo}
-                onChange={(e) => setCustomerHouseNo(e.target.value)}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customer-village" className="text-right">
-                Village
-              </Label>
-              <Input
-                id="customer-village"
-                value={customerVillage}
-                onChange={(e) => setCustomerVillage(e.target.value)}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customer-pincode" className="text-right">
-                Pincode
-              </Label>
-              <Input
-                id="customer-pincode"
-                value={customerPincode}
-                onChange={(e) => setCustomerPincode(e.target.value)}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customer-mandal" className="text-right">
-                Mandal
-              </Label>
-              <Input
-                id="customer-mandal"
-                value={customerMandal}
-                onChange={(e) => setCustomerMandal(e.target.value)}
-                className="col-span-3"
-                required
-                readOnly={isPincodeLoading || customerPincode.length === 6} // Make read-only if autofilled
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customer-district" className="text-right">
-                District
-              </Label>
-              <Input
-                id="customer-district"
-                value={customerDistrict}
-                onChange={(e) => setCustomerDistrict(e.target.value)}
-                className="col-span-3"
-                required
-                readOnly={isPincodeLoading || customerPincode.length === 6} // Make read-only if autofilled
-              />
-            </div>
-            {/* End new individual address fields */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="customer-phone" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="customer-phone">
                 Phone
               </Label>
               <Input
@@ -397,15 +332,71 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 type="tel"
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                className="col-span-3"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="customer-house-no">
+                House No
+              </Label>
+              <Input
+                id="customer-house-no"
+                value={customerHouseNo}
+                onChange={(e) => setCustomerHouseNo(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer-village">
+                Village
+              </Label>
+              <Input
+                id="customer-village"
+                value={customerVillage}
+                onChange={(e) => setCustomerVillage(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer-pincode">
+                Pincode
+              </Label>
+              <Input
+                id="customer-pincode"
+                value={customerPincode}
+                onChange={(e) => setCustomerPincode(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer-mandal">
+                Mandal
+              </Label>
+              <Input
+                id="customer-mandal"
+                value={customerMandal}
+                onChange={(e) => setCustomerMandal(e.target.value)}
+                required
+                readOnly={isPincodeLoading || customerPincode.length === 6}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer-district">
+                District
+              </Label>
+              <Input
+                id="customer-district"
+                value={customerDistrict}
+                onChange={(e) => setCustomerDistrict(e.target.value)}
+                required
+                readOnly={isPincodeLoading || customerPincode.length === 6}
+              />
+            </div>
+            <div className="space-y-2 col-span-1 md:col-span-2"> {/* Span two columns for payment */}
+              <Label>
                 Payment
               </Label>
-              <div className="col-span-3 flex space-x-2">
+              <div className="flex space-x-2">
                 <Button
                   type="button"
                   variant={paymentMethod === 'Razorpay' ? 'default' : 'outline'}
@@ -427,9 +418,9 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
               </div>
             </div>
             {product && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right font-bold">Total Price</Label>
-                <span className="col-span-3 text-lg font-bold">₹{(product.price ?? 0).toFixed(2)}</span>
+              <div className="space-y-2 col-span-1 md:col-span-2"> {/* Span two columns for total price */}
+                <Label className="font-bold">Total Price</Label>
+                <span className="text-lg font-bold block">₹{(product.price ?? 0).toFixed(2)}</span>
               </div>
             )}
           </div>
@@ -453,8 +444,8 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             <DialogDescription>Enter details for your demo order. This will not be a real purchase.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="demo-name" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="demo-name">
                 Full Name
               </Label>
               <Input
@@ -462,12 +453,11 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 type="text"
                 value={demoCustomerName}
                 onChange={(e) => setDemoOrderDetails(e.target.value, demoOrderPrice, demoOrderAddress)}
-                className="col-span-3"
                 placeholder="e.g., John Doe"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="demo-price" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="demo-price">
                 Price
               </Label>
               <Input
@@ -475,20 +465,17 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 type="number"
                 value={demoOrderPrice}
                 onChange={(e) => setDemoOrderDetails(demoCustomerName, e.target.value, demoOrderAddress)}
-                className="col-span-3"
                 placeholder="e.g., 19.99"
-                // Removed readOnly={userRole !== 'admin'} to allow all users to edit price
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="demo-address" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="demo-address">
                 House No, Village, Pincode, Mandal, District
               </Label>
               <Textarea
                 id="demo-address"
                 value={demoOrderAddress}
                 onChange={(e) => setDemoOrderDetails(demoCustomerName, demoOrderPrice, e.target.value)}
-                className="col-span-3"
                 placeholder="e.g., 123 Demo St, Demo City"
               />
             </div>
