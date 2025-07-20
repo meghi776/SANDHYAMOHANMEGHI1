@@ -15,6 +15,14 @@ serve(async (req) => {
   let payload;
   try {
     payload = await req.json();
+    // Add a check here: if payload is empty object or null after parsing
+    if (!payload || Object.keys(payload).length === 0) {
+      console.error("Edge Function: Received empty or null JSON payload.");
+      return new Response(JSON.stringify({ error: 'Empty or invalid JSON payload received.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
   } catch (e) {
     // Catch JSON parsing errors specifically
     if (e instanceof SyntaxError) {
@@ -69,8 +77,10 @@ serve(async (req) => {
       });
     }
 
-    if (!amount || !currency || !receipt) {
-      return new Response(JSON.stringify({ error: 'Amount, currency, and receipt are required.' }), {
+    // Validate payload fields more strictly
+    if (typeof amount !== 'number' || amount <= 0 || !currency || typeof currency !== 'string' || !receipt || typeof receipt !== 'string') {
+      console.error("Edge Function: Invalid or missing required fields in payload:", { amount, currency, receipt });
+      return new Response(JSON.stringify({ error: 'Amount (positive number), currency, and receipt are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
