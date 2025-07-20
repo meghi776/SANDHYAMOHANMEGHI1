@@ -61,7 +61,7 @@ serve(async (req) => {
 
     // Only decrement inventory for 'normal' orders
     if (type === 'normal') {
-      // Fetch the product to get its SKU for atomic inventory decrement
+      // Fetch the product to get its SKU
       const { data: product, error: fetchProductError } = await supabaseAdmin
         .from('products')
         .select('sku, inventory')
@@ -70,14 +70,14 @@ serve(async (req) => {
 
       if (fetchProductError || !product) {
         console.error("Edge Function: Error fetching product for inventory decrement:", fetchProductError);
-        return new Response(JSON.stringify({ error: 'Product not found or error fetching inventory details.' }), {
+        return new Response(JSON.stringify({ error: 'Product not found or error fetching details.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 404,
         });
       }
 
       if ((product.inventory || 0) < 1) {
-        return new Response(JSON.stringify({ error: 'Not enough stock available for this product.' }), {
+        return new Response(JSON.stringify({ error: 'Not enough stock available.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 409, // Conflict
         });
