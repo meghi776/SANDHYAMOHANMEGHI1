@@ -15,6 +15,7 @@ import { Loader2 } from 'lucide-react';
 import SavedDesignsModal from '@/components/SavedDesignsModal';
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
+import { User } from '@supabase/supabase-js'; // Import User type
 
 // Define types for props to ensure type safety
 interface Product {
@@ -67,7 +68,7 @@ interface CustomizerModalsProps {
   currentBlurredBackgroundImageUrl: string | null;
   onLoadDesign: (design: { elements: DesignElement[]; color: string | null; blurredBg: string | null }) => void;
   canvasContentRef: React.RefObject<HTMLDivElement>;
-  userRole: 'user' | 'admin' | null;
+  user: User | null; // Added user prop
 }
 
 // Declare Razorpay global object
@@ -104,7 +105,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   currentBlurredBackgroundImageUrl,
   onLoadDesign,
   canvasContentRef,
-  userRole,
+  user, // Destructure user prop
 }) => {
   const [isRazorpayLoading, setIsRazorpayLoading] = useState(false);
   // New states for individual address components
@@ -197,6 +198,12 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       return;
     }
 
+    if (!user) { // Check if user is logged in for Razorpay
+      showError("Please log in to use prepaid payment (Razorpay).");
+      setIsRazorpayLoading(false);
+      return;
+    }
+
     // Construct the full address string from individual fields
     const fullAddress = `${customerHouseNo.trim()}, ${customerVillage.trim()}, ${customerPincode.trim()}, ${customerMandal.trim()}, ${customerDistrict.trim()}`;
     if (!customerHouseNo.trim() || !customerVillage.trim() || !customerPincode.trim() || !customerMandal.trim() || !customerDistrict.trim()) {
@@ -215,7 +222,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
     try {
       const { data: { session: currentSession }, error: getSessionError } = await supabase.auth.getSession();
       if (getSessionError || !currentSession || !currentSession.access_token) {
-        showError("Authentication required to process payment. Please log in again.");
+        showError("Authentication required to process payment. Please try logging in again.");
         setIsRazorpayLoading(false);
         return;
       }
@@ -421,9 +428,15 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 <Button
                   type="button"
                   variant={paymentMethod === 'Razorpay' ? 'default' : 'outline'}
-                  onClick={() => setPaymentMethod('Razorpay')}
+                  onClick={() => {
+                    if (!user) {
+                      showError("Please log in to use prepaid payment (Razorpay).");
+                      return;
+                    }
+                    setPaymentMethod('Razorpay');
+                  }}
                   className="flex-1"
-                  disabled={isRazorpayLoading}
+                  disabled={isRazorpayLoading || !user} // Disable if not logged in
                 >
                   Prepaid (Razorpay)
                 </Button>
@@ -449,7 +462,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             <Button variant="outline" onClick={() => setIsCheckoutModalOpen(false)}>Cancel</Button>
             <Button
               onClick={() => paymentMethod === 'COD' ? handleCODPlaceOrder() : handleRazorpayPayment()}
-              disabled={isPlacingOrder || isRazorpayLoading || isPincodeLoading || !isPincodeValid}
+              disabled={isPlacingOrder || isRazorpayLoading || isPincodeLoading || !isPincodeValid || (paymentMethod === 'Razorpay' && !user)}
             >
               {isPlacingOrder || isRazorpayLoading || isPincodeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {paymentMethod === 'COD' ? 'Place Order' : 'Proceed to Pay'}

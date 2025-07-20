@@ -501,7 +501,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
+        Math.pow(unscaledTouch2X - unscaled1X, 2) + 
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -867,32 +867,43 @@ const ProductCustomizerPage = () => {
 
       orderedDesignImageUrl = publicUrlData.publicUrl;
 
-      // Call the new Edge Function to place the order and handle inventory decrement
       const orderPayload = {
-        user_id: user?.id || null, // Pass user.id if logged in, otherwise null
         product_id: product.id,
         customer_name: finalCustomerName,
         customer_address: finalCustomerAddress,
         customer_phone: finalCustomerPhone,
-        alternative_phone: finalAlternativePhone, // Pass new field
+        alternative_phone: finalAlternativePhone,
         payment_method: finalPaymentMethod,
         status: finalStatus,
         total_price: finalTotalPrice,
         ordered_design_image_url: orderedDesignImageUrl,
-        ordered_design_data: designElements, // Pass as is, Edge Function will handle JSONB
+        ordered_design_data: designElements,
         type: finalOrderType,
         payment_id: paymentId || null,
       };
 
-      console.log("Client: Invoking 'place-order-and-decrement-inventory' with payload:", orderPayload);
+      let invokeResult;
+      if (user) { // Logged-in user
+          console.log("Client: Logged-in user placing order via 'place-order-and-decrement-inventory'.");
+          invokeResult = await supabase.functions.invoke('place-order-and-decrement-inventory', {
+              body: { ...orderPayload, user_id: user.id }, // Pass user_id explicitly
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session?.access_token}`,
+              },
+          });
+      } else { // Guest user
+          console.log("Client: Guest user placing order via 'guest-register-and-order'.");
+          invokeResult = await supabase.functions.invoke('guest-register-and-order', {
+              body: orderPayload, // No user_id needed here, function handles it
+              headers: {
+                  'Content-Type': 'application/json',
+                  // No Authorization header for guest function, it uses service role key
+              },
+          });
+      }
 
-      const { data: invokeData, error: invokeError } = await supabase.functions.invoke('place-order-and-decrement-inventory', {
-        body: orderPayload,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(user?.id && { 'Authorization': `Bearer ${session?.access_token}` }), // Only send token if user is logged in
-        },
-      });
+      const { data: invokeData, error: invokeError } = invokeResult;
 
       if (invokeError) {
         console.error("--- Edge Function Invoke Error Details (place-order-and-decrement-inventory) ---");
@@ -933,7 +944,7 @@ const ProductCustomizerPage = () => {
 
       setIsCheckoutModalOpen(false);
       setIsDemoOrderModalOpen(false);
-      
+
       navigate('/order-success');
 
     } catch (err: any) {
@@ -1219,6 +1230,7 @@ const ProductCustomizerPage = () => {
     setBlurredBackgroundImageUrl(null);
   };
 
+  // isBuyNowDisabled now also considers if Razorpay is selected by a guest
   const isBuyNowDisabled = loading || isPlacingOrder || (product && product.inventory !== null && product.inventory <= 0) || designElements.filter(el => el.type === 'image').length === 0 || designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
 
   const currentSelectedElement = designElements.find(el => el.id === selectedElementId) || null;
@@ -1537,7 +1549,7 @@ const ProductCustomizerPage = () => {
         currentBlurredBackgroundImageUrl={blurredBackgroundImageUrl}
         onLoadDesign={loadDesign}
         canvasContentRef={canvasContentRef}
-        userRole={userRole}
+        user={user} // Pass user object to CustomizerModals
       />
     </div>
   );
