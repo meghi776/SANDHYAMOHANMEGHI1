@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log(`Edge Function: place-order-and-decrement-inventory invoked. Method: ${req.method}`); // Added log
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

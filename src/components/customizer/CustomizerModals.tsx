@@ -196,7 +196,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   }, [customerPincode]);
 
   const handleRazorpayPayment = async () => {
-    console.log("handleRazorpayPayment called. Current paymentMethod:", paymentMethod);
+    console.log("CustomizerModals: handleRazorpayPayment called.");
     if (!product || product.price === null || typeof product.price !== 'number' || product.price <= 0 || !customerName || !customerPhone) {
       showError("Product price must be a positive number, and customer name/phone are required for payment.");
       setIsRazorpayLoading(false);
@@ -242,13 +242,13 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       if (typeof payloadToSend.amount !== 'number' || payloadToSend.amount <= 0 || !payloadToSend.currency || !payloadToSend.receipt) {
         showError("Internal error: Payment payload is incomplete.");
         setIsRazorpayLoading(false);
-        console.error("Attempted to send invalid payload:", payloadToSend);
+        console.error("CustomizerModals: Attempted to send invalid payload:", payloadToSend);
         return;
       }
 
-      console.log("Payload to send to Razorpay Edge Function:", payloadToSend);
+      console.log("CustomizerModals: Payload to send to Razorpay Edge Function:", payloadToSend);
       const stringifiedBody = JSON.stringify(payloadToSend);
-      console.log("Stringified payload body:", stringifiedBody);
+      console.log("CustomizerModals: Stringified payload body:", stringifiedBody);
 
       const { data, error: invokeError } = await supabase.functions.invoke('create-razorpay-order', {
         body: stringifiedBody, // Use the explicitly stringified body
@@ -324,7 +324,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
 
   // Function to handle placing order for COD, using combined address
   const handleCODPlaceOrder = () => {
-    console.log("handleCODPlaceOrder called. Current paymentMethod:", paymentMethod);
+    console.log("CustomizerModals: handleCODPlaceOrder called.");
     const fullAddress = `${customerHouseNo.trim()}, ${customerVillage.trim()}, ${customerPincode.trim()}, ${customerMandal.trim()}, ${customerDistrict.trim()}`;
     if (!customerHouseNo.trim() || !customerVillage.trim() || !customerPincode.trim() || !customerMandal.trim() || !customerDistrict.trim()) {
       showError("All address fields are required.");
@@ -454,7 +454,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                       return;
                     }
                     setPaymentMethod('Razorpay');
-                    console.log("Payment method set to Razorpay.");
+                    console.log("CustomizerModals: Payment method set to Razorpay.");
                   }}
                   className="flex-1"
                   disabled={isRazorpayLoading || !user} // Disable if not logged in
@@ -466,7 +466,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                   variant={paymentMethod === 'COD' ? 'default' : 'outline'}
                   onClick={() => {
                     setPaymentMethod('COD');
-                    console.log("Payment method set to COD.");
+                    console.log("CustomizerModals: Payment method set to COD.");
                   }}
                   className="flex-1"
                   disabled={isRazorpayLoading}
@@ -486,7 +486,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             <Button variant="outline" onClick={() => setIsCheckoutModalOpen(false)}>Cancel</Button>
             <Button
               onClick={() => {
-                console.log("Final checkout button clicked. Current paymentMethod state:", paymentMethod);
+                console.log("CustomizerModals: Final checkout button clicked. Current paymentMethod state:", paymentMethod);
                 if (paymentMethod === 'COD') {
                   handleCODPlaceOrder();
                 } else if (paymentMethod === 'Razorpay') {

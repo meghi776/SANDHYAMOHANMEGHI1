@@ -7,23 +7,24 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log(`Edge Function: create-razorpay-order invoked. Method: ${req.method}`); // Added log
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Clone the request to inspect body without consuming it for req.json()
-  const clonedReq = req.clone();
-  let rawBodyText = '';
-  try {
-    rawBodyText = await clonedReq.text();
-    console.log("Edge Function: Raw request body received:", rawBodyText);
-  } catch (e) {
-    console.error("Edge Function: Error reading raw request body text:", e);
-  }
-
   let payload;
   try {
+    // Clone the request to inspect body without consuming it for req.json()
+    const clonedReq = req.clone();
+    let rawBodyText = '';
+    try {
+      rawBodyText = await clonedReq.text();
+      console.log("Edge Function: Raw request body received:", rawBodyText);
+    } catch (e) {
+      console.error("Edge Function: Error reading raw request body text:", e);
+    }
+
     payload = await req.json();
     // Add a check here: if payload is empty object or null after parsing
     if (!payload || Object.keys(payload).length === 0) {
