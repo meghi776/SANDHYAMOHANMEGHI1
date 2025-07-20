@@ -73,10 +73,11 @@ serve(async (req) => {
     // already existing, we inform the client that they need to log in.
     // This prevents creating duplicate accounts or overwriting existing ones.
 
-    const randomPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const password = customer_phone; // Password is the phone number
+
     const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       phone: guestPhone,
-      password: randomPassword,
+      password: password, // Use the phone number as the password
       email: guestEmail, // Provide a unique email to avoid conflicts if phone is not unique across users
       phone_confirm: true,
       email_confirm: true, // Auto-confirm email as it's a dummy one
