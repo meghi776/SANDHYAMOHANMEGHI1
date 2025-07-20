@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log(`Edge Function: guest-register-and-order invoked. Method: ${req.method}`); // Added log
+  console.log(`Edge Function: guest-register-and-order invoked. Method: ${req.method}`);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -56,7 +56,6 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Validate required fields
     if (!product_id || !customer_name || !customer_address || !customer_phone || !payment_method || !status || typeof total_price !== 'number' || total_price <= 0 || !ordered_design_image_url || !type) {
       return new Response(JSON.stringify({ error: 'Missing or invalid required order fields.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -65,50 +64,49 @@ serve(async (req) => {
     }
 
     // --- Guest User Registration/Lookup Logic ---
-    const guestEmail = `guest_${customer_phone}@meghi.com`; // Derive email from phone
+    const guestPhone = `+91${customer_phone}`;
+    const guestEmail = `guest_${customer_phone}@meghi.com`; // Fallback email
     let userId: string | null = null;
 
-    // 1. Try to find an existing user with this derived email
-    const { data: existingUsers, error: listUsersError } = await supabaseAdmin.auth.admin.listUsers({
-      page: 1,
-      perPage: 1,
-      search: guestEmail,
+    // We cannot directly query for a user by phone number via the admin API.
+    // The strategy is to attempt creation. If it fails due to the phone number
+    // already existing, we inform the client that they need to log in.
+    // This prevents creating duplicate accounts or overwriting existing ones.
+
+    const randomPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+      phone: guestPhone,
+      password: randomPassword,
+      email: guestEmail, // Provide a unique email to avoid conflicts if phone is not unique across users
+      phone_confirm: true,
+      email_confirm: true, // Auto-confirm email as it's a dummy one
+      user_metadata: {
+        first_name: customer_name.split(' ')[0] || 'Guest',
+        last_name: customer_name.split(' ').slice(1).join(' ') || '',
+        phone: customer_phone,
+      },
     });
 
-    if (listUsersError) {
-      console.error("Edge Function: Error listing users:", listUsersError);
-      throw new Error(`Failed to check for existing user: ${listUsersError.message}`);
-    }
-
-    if (existingUsers.users.length > 0) {
-      userId = existingUsers.users[0].id;
-      console.log(`Edge Function: Found existing guest user: ${userId}`);
-    } else {
-      // 2. If no user found, create a new one
-      const randomPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15); // Generate a random password
-      const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
-        email: guestEmail,
-        password: randomPassword, // A temporary password
-        email_confirm: true, // Auto-confirm email for guest accounts
-        user_metadata: {
-          first_name: customer_name.split(' ')[0] || 'Guest',
-          last_name: customer_name.split(' ').slice(1).join(' ') || '',
-          phone: customer_phone, // Store phone in metadata
-        },
-      });
-
-      if (createUserError) {
-        console.error("Edge Function: Error creating guest user:", createUserError);
-        throw new Error(`Failed to create guest account: ${createUserError.message}`);
+    if (createUserError) {
+      // Check for the specific error message for duplicate phone number
+      if (createUserError.message.includes('phone number already exists') || createUserError.message.includes('duplicate key value violates unique constraint "users_phone_key"')) {
+        // Since we cannot get the user ID securely, we must ask the user to log in.
+        return new Response(JSON.stringify({ error: 'A user with this phone number already exists. Please log in to place your order.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 409, // Conflict
+        });
       }
-      userId = newUser.user.id;
-      console.log(`Edge Function: Created new guest user: ${userId}`);
+      // For other errors, re-throw to be caught by the generic error handler
+      console.error("Edge Function: Error creating guest user:", createUserError);
+      throw new Error(`Failed to create guest account: ${createUserError.message}`);
     }
+    
+    userId = newUser.user.id;
+    console.log(`Edge Function: Created new guest user with phone number: ${userId}`);
     // --- End Guest User Registration/Lookup Logic ---
 
     // Only decrement inventory for 'normal' orders
     if (type === 'normal') {
-      // Fetch the product to get its SKU
       const { data: product, error: fetchProductError } = await supabaseAdmin
         .from('products')
         .select('sku, inventory')
@@ -126,11 +124,10 @@ serve(async (req) => {
       if ((product.inventory || 0) < 1) {
         return new Response(JSON.stringify({ error: 'Not enough stock available.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 409, // Conflict
+          status: 409,
         });
       }
 
-      // Use RPC function for atomic inventory decrement if SKU exists
       if (product.sku) {
         const { error: rpcError } = await supabaseAdmin
           .rpc('decrement_inventory_by_sku', {
@@ -143,13 +140,12 @@ serve(async (req) => {
           if (rpcError.message.includes('Not enough stock')) {
             return new Response(JSON.stringify({ error: 'Not enough stock available for this SKU.' }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 409, // Conflict
+              status: 409,
             });
           }
           throw new Error(`Failed to update inventory via RPC: ${rpcError.message}`);
         }
       } else {
-        // Fallback for products without SKU: direct update (less atomic)
         const newInventory = (product.inventory || 0) - 1;
         const { error: updateError } = await supabaseAdmin
           .from('products')
@@ -166,7 +162,7 @@ serve(async (req) => {
     const { data: orderData, error: orderInsertError } = await supabaseAdmin
       .from('orders')
       .insert({
-        user_id: userId, // Use the obtained user ID
+        user_id: userId,
         product_id: product_id,
         customer_name: customer_name,
         customer_address: customer_address,
