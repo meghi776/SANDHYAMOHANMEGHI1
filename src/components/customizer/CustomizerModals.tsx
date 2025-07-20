@@ -236,7 +236,6 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
         receipt: `receipt_${Date.now()}`,
       };
 
-      // Explicit check for payloadToSend content before stringifying
       if (typeof payloadToSend.amount !== 'number' || payloadToSend.amount <= 0 || !payloadToSend.currency || !payloadToSend.receipt) {
         showError("Internal error: Payment payload is incomplete.");
         setIsRazorpayLoading(false);
@@ -245,29 +244,23 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       }
 
       console.log("CustomizerModals: Payload to send to Razorpay Edge Function:", payloadToSend);
-      const { data, error: invokeError } = await supabase.functions.invoke('create-razorpay-order', {
-        body: JSON.stringify(payloadToSend), // Explicitly stringify the payload
+      
+      const functionUrl = 'https://smpjbedvyqensurarrym.supabase.co/functions/v1/create-razorpay-order';
+      const response = await fetch(functionUrl, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentSession.access_token}`,
         },
+        body: JSON.stringify(payloadToSend),
       });
 
-      if (invokeError) {
-        console.error("Error invoking create-razorpay-order:", invokeError);
-        let errorMessage = invokeError.message;
-        if (invokeError.context?.data) {
-          try {
-            const parsedError = typeof invokeError.context.data === 'string' ? JSON.parse(invokeError.context.data) : invokeError.context.data;
-            if (parsedError.error) {
-              errorMessage = parsedError.error;
-            }
-          } catch (e) { /* ignore */ }
-        }
-        showError(`Payment initiation failed: ${errorMessage}. Please check your Razorpay API keys in Supabase secrets.`); // More specific error
-        setIsRazorpayLoading(false);
-        return;
+      if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(errorBody.error || `Payment initiation failed: Edge function returned status ${response.status}`);
       }
+
+      const data = await response.json();
 
       const { order_id, amount: razorpayAmount, key_id } = data;
 
