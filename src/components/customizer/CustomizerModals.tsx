@@ -201,12 +201,6 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       return;
     }
 
-    if (!user) { // Check if user is logged in for Razorpay
-      showError("Please log in to use prepaid payment (Razorpay).");
-      setIsRazorpayLoading(false);
-      return;
-    }
-
     // Construct the full address string from individual fields
     const fullAddress = `${customerHouseNo.trim()}, ${customerVillage.trim()}, ${customerPincode.trim()}, ${customerMandal.trim()}, ${customerDistrict.trim()}`;
     if (!customerHouseNo.trim() || !customerVillage.trim() || !customerPincode.trim() || !customerMandal.trim() || !customerDistrict.trim()) {
@@ -223,44 +217,22 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
     setIsRazorpayLoading(true);
 
     try {
-      const { data: { session: currentSession }, error: getSessionError } = await supabase.auth.getSession();
-      if (getSessionError || !currentSession || !currentSession.access_token) {
-        showError("Authentication required to process payment. Please try logging in again.");
-        setIsRazorpayLoading(false);
-        return;
-      }
-
       const payloadToSend = {
-        amount: product.price,
-        currency: 'INR', // Assuming INR, adjust if needed
+        product_id: product.id,
+        currency: 'INR',
         receipt: `receipt_${Date.now()}`,
       };
 
-      if (typeof payloadToSend.amount !== 'number' || payloadToSend.amount <= 0 || !payloadToSend.currency || !payloadToSend.receipt) {
-        showError("Internal error: Payment payload is incomplete.");
-        setIsRazorpayLoading(false);
-        console.error("CustomizerModals: Attempted to send invalid payload:", payloadToSend);
-        return;
-      }
-
       console.log("CustomizerModals: Payload to send to Razorpay Edge Function:", payloadToSend);
       
-      const functionUrl = 'https://smpjbedvyqensurarrym.supabase.co/functions/v1/create-razorpay-order';
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentSession.access_token}`,
-        },
-        body: JSON.stringify(payloadToSend),
+      const { data, error: invokeError } = await supabase.functions.invoke('create-razorpay-order', {
+        body: payloadToSend,
       });
 
-      if (!response.ok) {
-        const errorBody = await response.json();
-        throw new Error(errorBody.error || `Payment initiation failed: Edge function returned status ${response.status}`);
+      if (invokeError) {
+        const errorBody = await invokeError.context.json();
+        throw new Error(errorBody.error || `Payment initiation failed: Edge function returned status ${invokeError.context.status}`);
       }
-
-      const data = await response.json();
 
       const { order_id, amount: razorpayAmount, key_id } = data;
 
@@ -284,13 +256,13 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
         },
         prefill: {
           name: customerName,
-          email: currentSession.user?.email || '',
+          email: user?.email || '', // Prefill if user exists, otherwise empty
           contact: customerPhone,
         },
         notes: {
           address: fullAddress, // Use the combined address string
           product_id: product.id,
-          user_id: currentSession.user?.id,
+          user_id: user?.id || 'guest', // Pass user_id or 'guest'
           alternative_phone: customerAlternativePhone || null, // Pass alternative phone
         },
         theme: {
@@ -462,15 +434,11 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                   type="button"
                   variant={paymentMethod === 'Razorpay' ? 'default' : 'outline'}
                   onClick={() => {
-                    if (!user) {
-                      showError("Please log in to use prepaid payment (Razorpay).");
-                      return;
-                    }
                     setPaymentMethod('Razorpay');
                     console.log("CustomizerModals: Payment method set to Razorpay.");
                   }}
                   className="flex-1"
-                  disabled={isRazorpayLoading || !user} // Disable if not logged in
+                  disabled={isRazorpayLoading}
                 >
                   Prepaid (Razorpay)
                 </Button>
@@ -508,7 +476,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                   showError("Please select a payment method.");
                 }
               }}
-              disabled={isPlacingOrder || isRazorpayLoading || isPincodeLoading || !isPincodeValid || (paymentMethod === 'Razorpay' && !user)}
+              disabled={isPlacingOrder || isRazorpayLoading || isPincodeLoading || !isPincodeValid}
             >
               {isPlacingOrder || isRazorpayLoading || isPincodeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {paymentMethod === 'COD' ? 'Place Order' : 'Proceed to Pay'}

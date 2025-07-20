@@ -12,11 +12,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log("Edge Function: Request Headers:");
-  for (const [key, value] of req.headers.entries()) {
-    console.log(`  ${key}: ${value}`);
-  }
-
   let payload;
   try {
     const bodyText = await req.text();
@@ -48,7 +43,7 @@ serve(async (req) => {
     });
   }
 
-  const { amount, currency, receipt } = payload;
+  const { product_id, currency, receipt } = payload;
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -66,35 +61,33 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Authorization header missing.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const { data: { user: invokerUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
-
-    if (authError || !invokerUser) {
-      console.error("Authentication error:", authError?.message);
-      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid token or user not found.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      });
-    }
-
-    if (typeof amount !== 'number' || amount <= 0 || !currency || typeof currency !== 'string' || !receipt || typeof receipt !== 'string') {
-      console.error("Edge Function: Invalid or missing required fields in payload:", { amount, currency, receipt });
-      return new Response(JSON.stringify({ error: 'Amount (positive number), currency, and receipt are required.' }), {
+    if (!product_id || !currency || typeof currency !== 'string' || !receipt || typeof receipt !== 'string') {
+      console.error("Edge Function: Invalid or missing required fields in payload:", { product_id, currency, receipt });
+      return new Response(JSON.stringify({ error: 'product_id, currency, and receipt are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
     }
 
+    // Fetch product price from database to ensure security
+    const { data: product, error: productError } = await supabaseAdmin
+      .from('products')
+      .select('price')
+      .eq('id', product_id)
+      .single();
+
+    if (productError || !product || typeof product.price !== 'number' || product.price <= 0) {
+      console.error("Error fetching product price or invalid price:", productError);
+      return new Response(JSON.stringify({ error: 'Invalid product or price not found.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404,
+      });
+    }
+
+    const amount = product.price;
+
     const orderPayload = {
-      amount: amount * 100,
+      amount: amount * 100, // Amount in paise
       currency: currency,
       receipt: receipt,
       payment_capture: 1,
