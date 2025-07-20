@@ -150,7 +150,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
 
           if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
             const postOffice = data[0].PostOffice[0];
-            setCustomerMandal(postOffice.Block || postOffice.City || ''); // Use City if Block is not available
+            setCustomerMandal(postOffice.Name || ''); // Changed to postOffice.Name
             setCustomerDistrict(postOffice.District || '');
             setIsPincodeValid(true); // Pincode is valid
           } else {
