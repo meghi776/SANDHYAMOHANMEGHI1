@@ -898,7 +898,7 @@ const ProductCustomizerPage = () => {
       if (user) {
           console.log("Client: Logged-in user placing order via 'place-order-and-decrement-inventory'.");
           invokeResult = await supabase.functions.invoke('place-order-and-decrement-inventory', {
-              body: { ...orderPayload, user_id: user.id },
+              body: JSON.stringify({ ...orderPayload, user_id: user.id }),
               headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${session?.access_token}`,
@@ -907,7 +907,7 @@ const ProductCustomizerPage = () => {
       } else {
           console.log("Client: Guest user placing order via 'guest-register-and-order'.");
           invokeResult = await supabase.functions.invoke('guest-register-and-order', {
-              body: orderPayload,
+              body: JSON.stringify(orderPayload),
               headers: {
                   'Content-Type': 'application/json',
               },
@@ -1552,10 +1552,10 @@ const ProductCustomizerPage = () => {
         setDemoOrderDetails={setDemoOrderDetails}
         isSavedDesignsModalOpen={isSavedDesignsModalOpen}
         setIsSavedDesignsModalOpen={setIsSavedDesignsModalOpen}
-        currentDesignElements={designElements}
-        currentSelectedCanvasColor={selectedCanvasColor}
-        currentBlurredBackgroundImageUrl={blurredBackgroundImageUrl}
-        onLoadDesign={loadDesign}
+        currentDesignElements={currentDesignElements}
+        currentSelectedCanvasColor={currentSelectedCanvasColor}
+        currentBlurredBackgroundImageUrl={currentBlurredBackgroundImageUrl}
+        onLoadDesign={onLoadDesign}
         canvasContentRef={canvasContentRef}
         user={user}
       />

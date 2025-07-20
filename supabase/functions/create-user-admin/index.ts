@@ -14,10 +14,14 @@ serve(async (req) => {
 
   let requestBody;
   try {
-    requestBody = await req.json();
+    const bodyText = await req.text();
+    if (!bodyText) {
+      throw new Error("Request body is empty.");
+    }
+    requestBody = JSON.parse(bodyText);
   } catch (e) {
     console.error("Error parsing JSON body:", e);
-    return new Response(JSON.stringify({ error: 'Invalid or empty JSON body' }), {
+    return new Response(JSON.stringify({ error: `Invalid request body: ${e.message}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });

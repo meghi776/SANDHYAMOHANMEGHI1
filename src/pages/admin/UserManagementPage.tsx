@@ -220,8 +220,9 @@ const UserManagementPage = () => {
       console.log("Attempting to invoke create-user-admin with token (relying on auto-attach):", currentSession.access_token);
 
       const { data, error: invokeError } = await supabase.functions.invoke('create-user-admin', {
-        body: requestBody,
+        body: JSON.stringify(requestBody),
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentSession.access_token}`, // Use the fresh token
         },
       });

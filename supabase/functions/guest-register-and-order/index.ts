@@ -14,13 +14,14 @@ serve(async (req) => {
 
   let payload;
   try {
-    payload = await req.json();
-    if (!payload) {
-      throw new Error("Request body is empty or not valid JSON.");
+    const bodyText = await req.text();
+    if (!bodyText) {
+      throw new Error("Request body is empty.");
     }
+    payload = JSON.parse(bodyText);
   } catch (e) {
     console.error("Edge Function: Error parsing JSON body:", e);
-    return new Response(JSON.stringify({ error: 'Invalid or empty request body.' }), {
+    return new Response(JSON.stringify({ error: `Invalid request body: ${e.message}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });
