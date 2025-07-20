@@ -112,6 +112,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   const [customerMandal, setCustomerMandal] = useState('');
   const [customerDistrict, setCustomerDistrict] = useState('');
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
+  const [isPincodeValid, setIsPincodeValid] = useState(false); // New state for pincode validity
   const pincodeTimeoutRef = React.useRef<number | null>(null);
 
 
@@ -131,7 +132,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
     loadRazorpayScript();
   }, []);
 
-  // Effect for Pincode autofill
+  // Effect for Pincode autofill and validation
   useEffect(() => {
     if (pincodeTimeoutRef.current) {
       clearTimeout(pincodeTimeoutRef.current);
@@ -139,6 +140,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
 
     if (customerPincode.length === 6) {
       setIsPincodeLoading(true);
+      setIsPincodeValid(false); // Assume invalid until validated
       pincodeTimeoutRef.current = setTimeout(async () => {
         try {
           const response = await fetch(`https://api.postalpincode.in/pincode/${customerPincode}`);
@@ -148,16 +150,19 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             const postOffice = data[0].PostOffice[0];
             setCustomerMandal(postOffice.Block || postOffice.City || ''); // Use City if Block is not available
             setCustomerDistrict(postOffice.District || '');
+            setIsPincodeValid(true); // Pincode is valid
           } else {
             showError("Invalid Pincode or no data found.");
             setCustomerMandal('');
             setCustomerDistrict('');
+            setIsPincodeValid(false); // Pincode is invalid
           }
         } catch (error) {
           console.error("Error fetching pincode data:", error);
           showError("Failed to fetch pincode data. Please try again.");
           setCustomerMandal('');
           setCustomerDistrict('');
+          setIsPincodeValid(false); // Pincode is invalid due to fetch error
         } finally {
           setIsPincodeLoading(false);
         }
@@ -166,6 +171,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       setCustomerMandal('');
       setCustomerDistrict('');
       setIsPincodeLoading(false);
+      setIsPincodeValid(false); // Pincode is not 6 digits, so it's not valid yet
     }
 
     return () => {
@@ -186,6 +192,11 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
     const fullAddress = `${customerHouseNo.trim()}, ${customerVillage.trim()}, ${customerPincode.trim()}, ${customerMandal.trim()}, ${customerDistrict.trim()}`;
     if (!customerHouseNo.trim() || !customerVillage.trim() || !customerPincode.trim() || !customerMandal.trim() || !customerDistrict.trim()) {
       showError("All address fields are required.");
+      setIsRazorpayLoading(false);
+      return;
+    }
+    if (!isPincodeValid) { // Check pincode validity before proceeding
+      showError("Please enter a valid pincode.");
       setIsRazorpayLoading(false);
       return;
     }
@@ -281,6 +292,10 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
     const fullAddress = `${customerHouseNo.trim()}, ${customerVillage.trim()}, ${customerPincode.trim()}, ${customerMandal.trim()}, ${customerDistrict.trim()}`;
     if (!customerHouseNo.trim() || !customerVillage.trim() || !customerPincode.trim() || !customerMandal.trim() || !customerDistrict.trim()) {
       showError("All address fields are required.");
+      return;
+    }
+    if (!isPincodeValid) { // Check pincode validity before proceeding
+      showError("Please enter a valid pincode.");
       return;
     }
     handlePlaceOrder(false); // Pass false for isDemo
@@ -422,7 +437,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
             <Button variant="outline" onClick={() => setIsCheckoutModalOpen(false)}>Cancel</Button>
             <Button
               onClick={() => paymentMethod === 'COD' ? handleCODPlaceOrder() : handleRazorpayPayment()}
-              disabled={isPlacingOrder || isRazorpayLoading || isPincodeLoading}
+              disabled={isPlacingOrder || isRazorpayLoading || isPincodeLoading || !isPincodeValid}
             >
               {isPlacingOrder || isRazorpayLoading || isPincodeLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {paymentMethod === 'COD' ? 'Place Order' : 'Proceed to Pay'}
