@@ -46,9 +46,10 @@ interface CustomizerModalsProps {
   setIsCheckoutModalOpen: (isOpen: boolean) => void;
   customerName: string;
   setCustomerName: (name: string) => void;
-  // Removed customerAddress, replaced with individual fields
   customerPhone: string;
   setCustomerPhone: (phone: string) => void;
+  customerAlternativePhone: string; // New prop
+  setCustomerAlternativePhone: (phone: string) => void; // New prop
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
   isPlacingOrder: boolean;
@@ -82,9 +83,10 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   setIsCheckoutModalOpen,
   customerName,
   setCustomerName,
-  // New individual address states
   customerPhone,
   setCustomerPhone,
+  customerAlternativePhone, // Destructure new prop
+  setCustomerAlternativePhone, // Destructure new prop
   paymentMethod,
   setPaymentMethod,
   isPlacingOrder,
@@ -265,6 +267,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
           address: fullAddress, // Use the combined address string
           product_id: product.id,
           user_id: currentSession.user?.id,
+          alternative_phone: customerAlternativePhone || null, // Pass alternative phone
         },
         theme: {
           color: '#3399CC',
@@ -333,6 +336,17 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer-alternative-phone"> {/* New field */}
+                Alternative Phone (Optional)
+              </Label>
+              <Input
+                id="customer-alternative-phone"
+                type="tel"
+                value={customerAlternativePhone}
+                onChange={(e) => setCustomerAlternativePhone(e.target.value)}
               />
             </div>
             <div className="space-y-2">

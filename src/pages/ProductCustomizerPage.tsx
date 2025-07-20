@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from "@/components/ui/button";
+import { Button } "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -117,7 +117,8 @@ const ProductCustomizerPage = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('COD');
+  const [customerAlternativePhone, setCustomerAlternativePhone] = useState(''); // New state
+  const [paymentMethod, setPaymentMethod] = useState('Razorpay'); // Default to Razorpay
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   const [mockupOverlayData, setMockupOverlayData] = useState<MockupData | null>(null);
@@ -821,6 +822,7 @@ const ProductCustomizerPage = () => {
     const finalCustomerName = isDemo ? demoCustomerName : customerName;
     const finalCustomerAddress = isDemo ? demoOrderAddress : customerAddress;
     const finalCustomerPhone = isDemo ? '0000000000' : customerPhone;
+    const finalAlternativePhone = isDemo ? null : (customerAlternativePhone.trim() === '' ? null : customerAlternativePhone.trim()); // Pass new field
     const finalPaymentMethod = isDemo ? 'Demo' : paymentMethod;
     const finalStatus = isDemo ? 'Demo' : (paymentMethod === 'Prepaid' ? 'Processing' : 'Pending');
     const finalTotalPrice = isDemo ? parseFloat(demoOrderPrice) : product.price;
@@ -872,6 +874,7 @@ const ProductCustomizerPage = () => {
         customer_name: finalCustomerName,
         customer_address: finalCustomerAddress,
         customer_phone: finalCustomerPhone,
+        alternative_phone: finalAlternativePhone, // Pass new field
         payment_method: finalPaymentMethod,
         status: finalStatus,
         total_price: finalTotalPrice,
@@ -944,7 +947,7 @@ const ProductCustomizerPage = () => {
     } finally {
       setIsPlacingOrder(false);
     }
-  }, [product, user, session, customerName, customerAddress, customerPhone, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
+  }, [product, user, session, customerName, customerAddress, customerPhone, customerAlternativePhone, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
 
   const handleBlurBackground = useCallback((sourceImageUrl?: string) => {
     const imageToBlur = sourceImageUrl 
@@ -1513,10 +1516,10 @@ const ProductCustomizerPage = () => {
         setIsCheckoutModalOpen={setIsCheckoutModalOpen}
         customerName={customerName}
         setCustomerName={setCustomerName}
-        customerAddress={customerAddress}
-        setCustomerAddress={setCustomerAddress}
         customerPhone={customerPhone}
         setCustomerPhone={setCustomerPhone}
+        customerAlternativePhone={customerAlternativePhone} // Pass new state
+        setCustomerAlternativePhone={setCustomerAlternativePhone} // Pass new state setter
         paymentMethod={paymentMethod}
         setPaymentMethod={setPaymentMethod}
         isPlacingOrder={isPlacingOrder}
@@ -1529,7 +1532,7 @@ const ProductCustomizerPage = () => {
         setDemoOrderDetails={setDemoOrderDetails}
         isSavedDesignsModalOpen={isSavedDesignsModalOpen}
         setIsSavedDesignsModalOpen={setIsSavedDesignsModalOpen}
-        currentDesignElements={designElements}
+        currentDesignElements={currentDesignElements}
         currentSelectedCanvasColor={selectedCanvasColor}
         currentBlurredBackgroundImageUrl={blurredBackgroundImageUrl}
         onLoadDesign={loadDesign}

@@ -28,6 +28,7 @@ serve(async (req) => {
     customer_name,
     customer_address,
     customer_phone,
+    alternative_phone, // New field
     payment_method,
     status,
     total_price,
@@ -124,6 +125,7 @@ serve(async (req) => {
         customer_name: customer_name,
         customer_address: customer_address,
         customer_phone: customer_phone,
+        alternative_phone: alternative_phone || null, // Store new field
         payment_method: payment_method,
         status: status,
         total_price: total_price,
