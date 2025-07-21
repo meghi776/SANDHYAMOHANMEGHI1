@@ -16,7 +16,7 @@ const Login = () => {
   const { user, loading: sessionLoading } = useSession();
   const [loading, setLoading] = useState(false);
   const [mobile, setMobile] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = '';
 
   const redirectTo = searchParams.get('redirect_to') || '/';
 
@@ -88,7 +88,7 @@ const Login = () => {
             </div>
             <Alert>
               <Info className="h-4 w-4" />
-              <AlertTitle>First Time User?</AlertTitle>
+              <AlertTitle>Already order placed?</AlertTitle>
               <AlertDescription>
                 If you checked out as a guest, your password is your 10-digit phone number. Please change it in 'My Account' after logging in.
               </AlertDescription>
