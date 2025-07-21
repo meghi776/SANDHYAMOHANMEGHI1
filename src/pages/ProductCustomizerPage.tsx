@@ -110,8 +110,8 @@ const ProductCustomizerPage = () => {
   const canvasContentRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
-  const { user, session } = useSession();
-  const [userRole, setUserRole] = useState<'user' | 'admin' | null>(null);
+  const { user, session } = useSession(); // Get user and session from context
+
   const { isDemoOrderModalOpen, setIsDemoOrderModalOpen, demoCustomerName, demoOrderPrice, setDemoOrderDetails, demoOrderAddress } = useDemoOrderModal();
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -177,6 +177,14 @@ const ProductCustomizerPage = () => {
   const lastCaretPosition = useRef<{ node: Node | null; offset: number } | null>(null);
 
   const [isSavedDesignsModalOpen, setIsSavedDesignsModalOpen] = useState(false);
+
+  // New states for individual address components
+  const [customerHouseNo, setCustomerHouseNo] = useState('');
+  const [customerVillage, setCustomerVillage] = useState('');
+  const [customerPincode, setCustomerPincode] = useState('');
+  const [customerMandal, setCustomerMandal] = useState('');
+  const [customerDistrict, setCustomerDistrict] = useState('');
+
 
   useEffect(() => {
     const updateCanvasDimensions = () => {
@@ -285,26 +293,31 @@ const ProductCustomizerPage = () => {
     }
   }, [productId, setDemoOrderDetails]);
 
+  // New useEffect to pre-fill customer details if user is logged in
   useEffect(() => {
-    const fetchUserRole = async () => {
-      if (user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        if (error) {
-          console.error("Error fetching user role:", error);
-          setUserRole(null);
-        } else if (data) {
-          setUserRole(data.role);
-        }
-      } else {
-        setUserRole(null);
+    if (user && user.profile) {
+      const fullName = [user.profile.first_name, user.profile.last_name].filter(Boolean).join(' ');
+      setCustomerName(fullName);
+      if (user.profile.phone) {
+        setCustomerPhone(user.profile.phone);
       }
-    };
-    fetchUserRole();
-  }, [user]);
+      // Pre-fill address components
+      setCustomerHouseNo(user.profile.house_no || '');
+      setCustomerVillage(user.profile.village || '');
+      setCustomerPincode(user.profile.pincode || '');
+      setCustomerMandal(user.profile.mandal || '');
+      setCustomerDistrict(user.profile.district || '');
+    } else {
+      // Clear fields if user logs out or is not logged in
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerHouseNo('');
+      setCustomerVillage('');
+      setCustomerPincode('');
+      setCustomerMandal('');
+      setCustomerDistrict('');
+    }
+  }, [user]); // Depend on the user object from session context
 
   useEffect(() => {
     return () => {
@@ -1536,6 +1549,16 @@ const ProductCustomizerPage = () => {
         setCustomerName={setCustomerName}
         customerPhone={customerPhone}
         setCustomerPhone={setCustomerPhone}
+        customerHouseNo={customerHouseNo} // Pass new props
+        setCustomerHouseNo={setCustomerHouseNo} // Pass new props
+        customerVillage={customerVillage} // Pass new props
+        setCustomerVillage={setCustomerVillage} // Pass new props
+        customerPincode={customerPincode} // Pass new props
+        setCustomerPincode={setCustomerPincode} // Pass new props
+        customerMandal={customerMandal} // Pass new props
+        setCustomerMandal={setCustomerMandal} // Pass new props
+        customerDistrict={customerDistrict} // Pass new props
+        setCustomerDistrict={setCustomerDistrict} // Pass new props
         paymentMethod={paymentMethod}
         setPaymentMethod={setPaymentMethod}
         isPlacingOrder={isPlacingOrder}
