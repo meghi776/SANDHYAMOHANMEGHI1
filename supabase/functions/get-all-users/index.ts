@@ -57,17 +57,17 @@ serve(async (req) => {
       });
     }
 
-    // Fetch profiles from public.profiles
+    // Fetch profiles from public.profiles, including phone
     const { data: profilesData, error: fetchProfilesError } = await supabaseAdmin
       .from('profiles')
-      .select('id, first_name, last_name, role');
+      .select('id, first_name, last_name, role, phone'); // Added 'phone'
 
     if (fetchProfilesError) {
       console.error("Edge Function: Error fetching profiles:", fetchProfilesError);
       throw new Error(`Failed to fetch profiles: ${fetchProfilesError.message}`);
     }
 
-    // Fetch user emails from auth.users (admin API)
+    // Fetch user emails and phones from auth.users (admin API)
     const { data: authUsersData, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
       perPage: 1000, // Adjust as needed, or implement pagination if many users
@@ -78,12 +78,13 @@ serve(async (req) => {
       throw new Error(`Failed to fetch auth user data: ${authUsersError.message}`);
     }
 
-    const userEmailMap = new Map(authUsersData.users.map(user => [user.id, user.email]));
+    const authUserMap = new Map(authUsersData.users.map(user => [user.id, { email: user.email, phone: user.phone }]));
 
-    // Combine profiles with emails
+    // Combine profiles with emails and phones
     const combinedProfiles = (profilesData || []).map(profile => ({
       ...profile,
-      email: userEmailMap.get(profile.id) || null,
+      email: authUserMap.get(profile.id)?.email || null,
+      phone: profile.phone || authUserMap.get(profile.id)?.phone?.replace('+91', '') || null, // Prioritize profile.phone, then auth.phone (stripped +91)
     }));
 
     return new Response(JSON.stringify({ profiles: combinedProfiles }), {

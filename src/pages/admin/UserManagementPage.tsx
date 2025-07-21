@@ -24,7 +24,8 @@ interface Profile {
   first_name: string | null;
   last_name: string | null;
   role: 'user' | 'admin';
-  email: string | null; // Added email field
+  email: string | null;
+  phone: string | null; // Added phone field
 }
 
 const UserManagementPage = () => {
@@ -211,6 +212,7 @@ const UserManagementPage = () => {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead> {/* New TableHead for Phone */}
                   <TableHead>First Name</TableHead>
                   <TableHead>Last Name</TableHead>
                   <TableHead>Role</TableHead>
@@ -222,6 +224,7 @@ const UserManagementPage = () => {
                   <TableRow key={profile.id}>
                     <TableCell className="font-medium">{profile.id}</TableCell>
                     <TableCell>{profile.email || 'N/A'}</TableCell>
+                    <TableCell>{profile.phone || 'N/A'}</TableCell> {/* New TableCell for Phone */}
                     <TableCell>{profile.first_name || 'N/A'}</TableCell>
                     <TableCell>{profile.last_name || 'N/A'}</TableCell>
                     <TableCell>{profile.role}</TableCell>
