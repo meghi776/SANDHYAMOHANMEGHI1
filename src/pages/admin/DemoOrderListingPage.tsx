@@ -38,7 +38,7 @@ interface Order {
   total_price: number;
   ordered_design_image_url: string | null;
   product_id: string | null;
-  products: { name: string } | null;
+  products: { name: string; printing_width_mm: number | null; printing_height_mm: number | null; } | null;
   profiles: { first_name: string | null; last_name: string | null; } | null;
   user_id: string;
   user_email?: string | null;
@@ -64,7 +64,7 @@ const DemoOrderListingPage = () => {
   const [editComment, setEditComment] = useState('');
   const [sortColumn, setSortColumn] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+  const [selectedOrderIds, setSelectedOrderIds] = new Set();
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
 
@@ -348,7 +348,8 @@ const DemoOrderListingPage = () => {
         try {
           const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
-          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          const { printing_width_mm, printing_height_mm } = order.products || {};
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId, printing_width_mm, printing_height_mm);
           
           const fileName = `${orderDisplayId}.png`;
           zip.file(fileName, blobWithText);
@@ -403,7 +404,6 @@ const DemoOrderListingPage = () => {
           newStatus: bulkNewStatus,
         }),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentSession.access_token}`,
         },
       });
