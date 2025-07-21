@@ -16,7 +16,7 @@ const Login = () => {
   const { user, loading: sessionLoading } = useSession();
   const [loading, setLoading] = useState(false);
   const [mobile, setMobile] = useState('');
-  const [password, setPassword] = '';
+  const [password, setPassword] = useState(''); // Corrected: Added useState('')
 
   const redirectTo = searchParams.get('redirect_to') || '/';
 
