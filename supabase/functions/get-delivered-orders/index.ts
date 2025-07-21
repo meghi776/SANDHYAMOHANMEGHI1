@@ -58,7 +58,7 @@ serve(async (req) => {
       .select(`
         id, display_id, created_at, customer_name, customer_address, customer_phone,
         payment_method, status, total_price, ordered_design_image_url,
-        product_id, products (name), profiles (first_name, last_name), user_id, type, comment, ordered_design_data
+        product_id, products (name, printing_width_mm, printing_height_mm), profiles (first_name, last_name), user_id, type, comment, ordered_design_data
       `)
       .eq('status', 'Delivered')
       .order('created_at', { ascending: false });

@@ -30,6 +30,8 @@ interface Product {
   mockup_width: number | null;
   mockup_height: number | null;
   mockup_rotation: number | null;
+  printing_width_mm: number | null; // New field
+  printing_height_mm: number | null; // New field
 }
 
 const ProductEditPage = () => {
@@ -52,6 +54,8 @@ const ProductEditPage = () => {
   const [mockupWidth, setMockupWidth] = useState<string>('');
   const [mockupHeight, setMockupHeight] = useState<string>('');
   const [mockupRotation, setMockupRotation] = useState<string>('0');
+  const [printingWidth, setPrintingWidth] = useState<string>(''); // New state
+  const [printingHeight, setPrintingHeight] = useState<string>(''); // New state
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +73,7 @@ const ProductEditPage = () => {
       const { data: allProductsData, error: allProductsError } = await supabase
         .from('products')
         .select(`
-          id, name, description, price, canvas_width, canvas_height, is_disabled, inventory, sku,
+          id, name, description, price, canvas_width, canvas_height, is_disabled, inventory, sku, printing_width_mm, printing_height_mm,
           mockups(id, image_url, mockup_x, mockup_y, mockup_width, mockup_height, mockup_rotation)
         `)
         .eq('category_id', categoryId)
@@ -119,6 +123,8 @@ const ProductEditPage = () => {
         setMockupWidth(productData.mockups?.[0]?.mockup_width?.toString() || '');
         setMockupHeight(productData.mockups?.[0]?.mockup_height?.toString() || '');
         setMockupRotation(productData.mockups?.[0]?.mockup_rotation?.toString() || '0');
+        setPrintingWidth(productData.printing_width_mm?.toString() || '');
+        setPrintingHeight(productData.printing_height_mm?.toString() || '');
       }
     } catch (err: any) {
       console.error("Error fetching product data:", err);
@@ -196,19 +202,23 @@ const ProductEditPage = () => {
       }
 
       // 2. Insert/Update Product
+      const productPayload = {
+        name: productName,
+        description: productDescription,
+        price: parseFloat(productPrice),
+        canvas_width: parseInt(canvasWidth),
+        canvas_height: parseInt(canvasHeight),
+        is_disabled: isProductDisabled,
+        inventory: parseInt(productInventory),
+        sku: productSku.trim() === '' ? null : productSku.trim(),
+        printing_width_mm: printingWidth ? parseFloat(printingWidth) : null,
+        printing_height_mm: printingHeight ? parseFloat(printingHeight) : null,
+      };
+
       if (isEditing) {
         const { data, error: updateError } = await supabase
           .from('products')
-          .update({
-            name: productName,
-            description: productDescription,
-            price: parseFloat(productPrice),
-            canvas_width: parseInt(canvasWidth),
-            canvas_height: parseInt(canvasHeight),
-            is_disabled: isProductDisabled,
-            inventory: parseInt(productInventory),
-            sku: productSku.trim() === '' ? null : productSku.trim(),
-          })
+          .update(productPayload)
           .eq('id', productId)
           .select()
           .single();
@@ -219,16 +229,9 @@ const ProductEditPage = () => {
         const { data, error: insertError } = await supabase
           .from('products')
           .insert({
+            ...productPayload,
             category_id: categoryId,
             brand_id: brandId,
-            name: productName,
-            description: productDescription,
-            price: parseFloat(productPrice),
-            canvas_width: parseInt(canvasWidth),
-            canvas_height: parseInt(canvasHeight),
-            is_disabled: isProductDisabled,
-            inventory: parseInt(productInventory),
-            sku: productSku.trim() === '' ? null : productSku.trim(),
           })
           .select()
           .single();
@@ -387,13 +390,25 @@ const ProductEditPage = () => {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="canvasWidth">Canvas Width</Label>
-              <Input id="canvasWidth" type="number" value={canvasWidth} onChange={(e) => setCanvasWidth(e.target.value)} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="canvasWidth">Canvas Width (px)</Label>
+                <Input id="canvasWidth" type="number" value={canvasWidth} onChange={(e) => setCanvasWidth(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="canvasHeight">Canvas Height (px)</Label>
+                <Input id="canvasHeight" type="number" value={canvasHeight} onChange={(e) => setCanvasHeight(e.target.value)} />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="canvasHeight">Canvas Height</Label>
-              <Input id="canvasHeight" type="number" value={canvasHeight} onChange={(e) => setCanvasHeight(e.target.value)} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="printingWidth">Printing Width (mm)</Label>
+                <Input id="printingWidth" type="number" value={printingWidth} onChange={(e) => setPrintingWidth(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="printingHeight">Printing Height (mm)</Label>
+                <Input id="printingHeight" type="number" value={printingHeight} onChange={(e) => setPrintingHeight(e.target.value)} />
+              </div>
             </div>
             <div>
               <Label htmlFor="mockupImage">Mockup Image</Label>
