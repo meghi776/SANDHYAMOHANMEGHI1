@@ -38,7 +38,7 @@ interface Order {
   total_price: number;
   ordered_design_image_url: string | null;
   product_id: string | null;
-  products: { name: string; printing_width_mm: number | null; printing_height_mm: number | null; } | null;
+  products: { name: string } | null;
   profiles: { first_name: string | null; last_name: string | null; } | null;
   type: string;
   comment: string | null;
@@ -71,7 +71,7 @@ const UserOrdersPage = () => {
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
 
   const orderStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Demo'];
-  const paymentMethods = ['COD']; // Updated payment methods
+  const paymentMethods = ['COD', 'Demo']; // Updated payment methods
 
   const fetchUserAndOrders = async () => {
     if (!userId) {
@@ -105,7 +105,7 @@ const UserOrdersPage = () => {
       .select(`
         id, display_id, created_at, customer_name, customer_address, customer_phone,
         payment_method, status, total_price, ordered_design_image_url,
-        product_id, products (name, printing_width_mm, printing_height_mm), profiles (first_name, last_name), type, comment
+        product_id, products (name), profiles (first_name, last_name), type, comment
       `)
       .eq('user_id', userId);
     
@@ -271,8 +271,7 @@ const UserOrdersPage = () => {
         try {
           const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
-          const { printing_width_mm, printing_height_mm } = order.products || {};
-          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId, printing_width_mm, printing_height_mm);
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
           
           const fileName = `${orderDisplayId}.png`;
           zip.file(fileName, blobWithText);
@@ -342,6 +341,7 @@ const UserOrdersPage = () => {
           newStatus: bulkNewStatus,
         }),
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentSession.access_token}`,
         },
       });

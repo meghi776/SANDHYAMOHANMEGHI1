@@ -41,7 +41,7 @@ interface Order {
   total_price: number;
   ordered_design_image_url: string | null;
   product_id: string | null;
-  products: { name: string; printing_width_mm: number | null; printing_height_mm: number | null; } | null;
+  products: { name: string } | null;
   profiles: { first_name: string | null; last_name: string | null; } | null;
   user_id: string;
   user_email?: string | null;
@@ -423,8 +423,7 @@ const OrderManagementPage = () => {
         try {
           const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
-          const { printing_width_mm, printing_height_mm } = order.products || {};
-          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId, printing_width_mm, printing_height_mm);
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
           
           const fileName = `${orderDisplayId}.png`;
           zip.file(fileName, blobWithText);
@@ -931,6 +930,13 @@ const OrderManagementPage = () => {
                     <TableBody>
                       {orders.map((order) => (
                         <TableRow key={order.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedOrderIds.has(order.id)}
+                              onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
+                              aria-label={`Select order ${order.id}`}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium text-xs">{order.display_id || `${order.id.substring(0, 8)}...`}</TableCell>
                           <TableCell>{format(new Date(order.created_at), 'PPP')}</TableCell>
                           <TableCell>

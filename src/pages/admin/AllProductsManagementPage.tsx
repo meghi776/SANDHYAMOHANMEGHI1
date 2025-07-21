@@ -44,8 +44,6 @@ interface Product {
   mockup_width: number | null;
   mockup_height: number | null;
   mockup_rotation: number | null;
-  printing_width_mm: number | null;
-  printing_height_mm: number | null;
   category_name?: string; // Added for display
   brand_name?: string; // Added for display
 }
@@ -100,8 +98,6 @@ const AllProductsManagementPage = () => {
         is_disabled,
         inventory,
         sku,
-        printing_width_mm,
-        printing_height_mm,
         mockups(id, image_url, mockup_x, mockup_y, mockup_width, mockup_height, mockup_rotation),
         categories(name),
         brands(name)
@@ -683,12 +679,12 @@ const AllProductsManagementPage = () => {
                         </TableHead>
                         <TableHead>Mockup Image</TableHead>
                         <TableHead>Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Brand</TableHead>
+                        <TableHead>Category</TableHead> {/* New column */}
+                        <TableHead>Brand</TableHead> {/* New column */}
                         <TableHead>SKU</TableHead>
+                        <TableHead>Description</TableHead>
                         <TableHead>Price</TableHead>
                         <TableHead>Canvas (WxH)</TableHead>
-                        <TableHead>Printing Size (mm)</TableHead>
                         <TableHead>Inventory</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -712,12 +708,12 @@ const AllProductsManagementPage = () => {
                             )}
                           </TableCell>
                           <TableCell className="font-medium">{product.name}</TableCell>
-                          <TableCell>{product.category_name || 'N/A'}</TableCell>
-                          <TableCell>{product.brand_name || 'N/A'}</TableCell>
+                          <TableCell>{product.category_name || 'N/A'}</TableCell> {/* Display category name */}
+                          <TableCell>{product.brand_name || 'N/A'}</TableCell> {/* Display brand name */}
                           <TableCell>{product.sku || 'N/A'}</TableCell>
+                          <TableCell>{product.description || 'N/A'}</TableCell>
                           <TableCell>₹{product.price?.toFixed(2) || '0.00'}</TableCell>
                           <TableCell>{product.canvas_width || 'N/A'}x{product.canvas_height || 'N/A'}</TableCell>
-                          <TableCell>{product.printing_width_mm || 'N/A'}x{product.printing_height_mm || 'N/A'}</TableCell>
                           <TableCell>{product.inventory ?? 'N/A'}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
