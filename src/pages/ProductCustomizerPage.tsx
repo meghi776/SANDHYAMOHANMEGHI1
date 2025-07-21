@@ -543,6 +543,7 @@ const ProductCustomizerPage = () => {
 
     const { x: unscaledClientX, y: unscaledClientY } = getUnscaledCoords(e.clientX, e.clientY);
 
+    // Calculate initial diagonal distance from element's top-left corner to the mouse click
     const initialDiagonalDistance = Math.sqrt(
       Math.pow(unscaledClientX - element.x, 2) +
       Math.pow(unscaledClientY - element.y, 2)
@@ -575,6 +576,7 @@ const ProductCustomizerPage = () => {
 
     const { x: unscaledClientX, y: unscaledClientY } = getUnscaledCoords(e.touches[0].clientX, e.touches[0].clientY);
 
+    // Calculate initial diagonal distance from element's top-left corner to the touch point
     const initialDiagonalDistance = Math.sqrt(
       Math.pow(unscaledClientX - element.x, 2) +
       Math.pow(unscaledClientY - element.y, 2)
@@ -613,16 +615,25 @@ const ProductCustomizerPage = () => {
 
     if (handle === 'br') {
       if (element.type === 'text') {
-        const deltaX = currentUnscaledX - resizeState.current.startX;
-        const deltaY = currentUnscaledY - resizeState.current.startY;
-        newWidth = Math.max(20, initialWidth + deltaX);
-        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5));
-        
+        // Calculate new diagonal distance from element's top-left corner to current mouse position
+        const currentDiagonalDistance = Math.sqrt(
+          Math.pow(currentUnscaledX - initialElementX, 2) +
+          Math.pow(currentUnscaledY - initialElementY, 2)
+        );
+
+        if (initialDiagonalDistance === 0) return; // Avoid division by zero
+
+        const scale = currentDiagonalDistance / initialDiagonalDistance;
+
+        // Apply scale to initial width and font size
+        newWidth = Math.max(20, initialWidth * scale);
+        newFontSize = Math.max(10, Math.min(100, initialFontSize * scale)); // Scale font size proportionally
+
         updateElement(activeElementId, {
           width: newWidth,
           fontSize: newFontSize,
         });
-      } else {
+      } else { // Image
         const currentDiagonalDistance = Math.sqrt(
           Math.pow(currentUnscaledX - initialElementX, 2) +
           Math.pow(currentUnscaledY - initialElementY, 2)
@@ -660,10 +671,19 @@ const ProductCustomizerPage = () => {
 
     if (handle === 'br') {
       if (element.type === 'text') {
-        const deltaX = currentUnscaledX - resizeState.current.startX;
-        const deltaY = currentUnscaledY - resizeState.current.startY;
-        newWidth = Math.max(20, initialWidth + deltaX);
-        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5));
+        // Calculate new diagonal distance from element's top-left corner to current touch position
+        const currentDiagonalDistance = Math.sqrt(
+          Math.pow(currentUnscaledX - initialElementX, 2) +
+          Math.pow(currentUnscaledY - initialElementY, 2)
+        );
+
+        if (initialDiagonalDistance === 0) return; // Avoid division by zero
+
+        const scale = currentDiagonalDistance / initialDiagonalDistance;
+
+        // Apply scale to initial width and font size
+        newWidth = Math.max(20, initialWidth * scale);
+        newFontSize = Math.max(10, Math.min(100, initialFontSize * scale)); // Scale font size proportionally
         
         updateElement(activeElementId, {
           width: newWidth,
