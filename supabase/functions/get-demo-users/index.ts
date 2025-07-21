@@ -79,10 +79,10 @@ serve(async (req) => {
       });
     }
 
-    // Fetch profiles for these users
+    // Fetch profiles for these users, including phone number from profiles table
     const { data: profilesData, error: profilesFetchError } = await supabaseAdmin
       .from('profiles')
-      .select('id, first_name, last_name, role')
+      .select('id, first_name, last_name, role, phone') // Added phone
       .in('id', uniqueUserIds);
 
     if (profilesFetchError) {
@@ -90,7 +90,7 @@ serve(async (req) => {
       throw new Error(`Failed to fetch user profiles: ${profilesFetchError.message}`);
     }
 
-    // Fetch auth.users data (for email)
+    // Fetch auth.users data (for email and phone from auth)
     const { data: authUsersData, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
       perPage: 1000, // Adjust as needed, or implement pagination if many users
@@ -101,16 +101,20 @@ serve(async (req) => {
       throw new Error(`Failed to fetch auth user data: ${authUsersError.message}`);
     }
 
-    const authUserMap = new Map(authUsersData.users.map(user => [user.id, user.email]));
+    const authUserMap = new Map(authUsersData.users.map(user => [user.id, { email: user.email, phone: user.phone }]));
 
-    const usersWithDemoOrders = profilesData.map(profile => ({
-      id: profile.id,
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      role: profile.role,
-      email: authUserMap.get(profile.id) || 'N/A',
-      demo_order_count: userIdsWithCounts.get(profile.id) || 0, // Add the count here
-    }));
+    const usersWithDemoOrders = profilesData.map(profile => {
+      const authInfo = authUserMap.get(profile.id);
+      return {
+        id: profile.id,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        role: profile.role,
+        email: authInfo?.email || 'N/A',
+        phone: profile.phone || authInfo?.phone?.replace('+91', '') || 'N/A', // Prioritize profile.phone, then auth.phone (stripped +91)
+        demo_order_count: userIdsWithCounts.get(profile.id) || 0, // Add the count here
+      };
+    });
 
     return new Response(JSON.stringify({ users: usersWithDemoOrders }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

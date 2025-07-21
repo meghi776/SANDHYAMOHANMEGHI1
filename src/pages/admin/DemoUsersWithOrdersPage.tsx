@@ -12,6 +12,7 @@ interface DemoUser {
   first_name: string | null;
   last_name: string | null;
   email: string | null;
+  phone: string | null; // Added phone
   role: 'user' | 'admin';
   demo_order_count: number; // Added demo_order_count
 }
@@ -128,7 +129,7 @@ const DemoUsersWithOrdersPage = () => {
                       <User className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="text-sm text-muted-foreground">{user.phone && user.phone !== 'N/A' ? user.phone : user.email}</p>
                       <div className="flex items-center mt-2">
                         <ShoppingCart className="h-4 w-4 text-blue-500 mr-2" />
                         <span className="text-base font-semibold">{user.demo_order_count} Demo Orders</span>
