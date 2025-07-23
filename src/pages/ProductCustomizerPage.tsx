@@ -1270,7 +1270,7 @@ const ProductCustomizerPage = () => {
         onDeleteElement={deleteElement}
       />
       
-      <div className="relative flex-1 flex flex-col md:flex-row overflow-hidden pt-14 pb-65 z-1">
+      <div className="relative flex-1 flex flex-col md:flex-row overflow-y-auto pt-14 pb-65 z-1"> {/* Changed overflow-hidden to overflow-y-auto */}
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-gray-500" />

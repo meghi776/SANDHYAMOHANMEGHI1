@@ -107,12 +107,17 @@
 }
 
 @layer base {
+  html, body, #root {
+    height: 100%; /* Ensure html, body, and root take full viewport height */
+    overflow: hidden; /* Prevent scrolling on the entire page */
+  }
+
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground overflow-x-hidden; /* Added overflow-x-hidden */
+    @apply bg-background text-foreground;
   }
 }
 
