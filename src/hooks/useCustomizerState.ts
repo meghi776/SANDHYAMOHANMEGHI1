@@ -759,13 +759,9 @@ export const useCustomizerState = () => {
       const canvas = await html2canvas(canvasContentRef.current, {
         useCORS: true,
         allowTaint: true,
-        backgroundColor: null, // Let CSS background handle it
-        scale: 3, 
-        width: product.canvas_width, 
-        height: product.canvas_height,
-        x: 0,
-        y: 0,
-        foreignObjectRendering: true, // Added this option
+        backgroundColor: selectedCanvasColor || '#FFFFFF', // Explicitly set background from state or default to white
+        scale: 5, // Increased scale for higher resolution
+        foreignObjectRendering: true,
       });
       console.log("captureDesignForOrder: html2canvas capture finished.");
 
@@ -794,7 +790,7 @@ export const useCustomizerState = () => {
       });
       console.log("captureDesignForOrder: Cleanup complete.");
     }
-  }, [product, selectedElementId, designElements, mockupOverlayData]);
+  }, [product, selectedElementId, designElements, mockupOverlayData, selectedCanvasColor]);
 
   const handlePlaceOrder = useCallback(async (
     isDemo: boolean,
