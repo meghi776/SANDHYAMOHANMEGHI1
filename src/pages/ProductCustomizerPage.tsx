@@ -93,7 +93,7 @@ const ProductCustomizerPage = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = true;
   const [error, setError] = useState<string | null>(null);
   const [designElements, setDesignElements] = useState<DesignElement[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
