@@ -207,17 +207,13 @@ export const useCustomizerState = () => {
         const mockup = productData.mockups.length > 0 ? productData.mockups[0] : null;
         const proxiedMockupUrl = mockup?.image_url ? proxyImageUrl(mockup.image_url) : null;
         
-        const effectiveMockupX = mockup?.mockup_x ?? 0;
-        const effectiveMockupY = mockup?.mockup_y ?? 0;
-        const effectiveMockupWidth = mockup?.mockup_width ?? productData.canvas_width;
-        const effectiveMockupHeight = mockup?.mockup_height ?? productData.canvas_height;
-
+        // Force mockup to always fit the entire canvas
         setMockupOverlayData({
           image_url: proxiedMockupUrl,
-          mockup_x: effectiveMockupX,
-          mockup_y: effectiveMockupY,
-          mockup_width: effectiveMockupWidth,
-          mockup_height: effectiveMockupHeight,
+          mockup_x: 0, // Always set to 0
+          mockup_y: 0, // Always set to 0
+          mockup_width: productData.canvas_width, // Always set to canvas width
+          mockup_height: productData.canvas_height, // Always set to canvas height
           mockup_rotation: mockup?.mockup_rotation ?? 0,
           design_data: mockup?.design_data || null,
         });
@@ -493,7 +489,7 @@ export const useCustomizerState = () => {
         rotation: newRotation,
       });
     }
-  }, [isMobile, designElements, getUnscaledCoords, updateElement]);
+  }, [designElements, getUnscaledCoords, updateElement]);
 
   const handleTouchEnd = useCallback(() => {
     if (!isMobile) return;

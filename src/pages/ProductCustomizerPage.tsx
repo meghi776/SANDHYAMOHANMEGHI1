@@ -245,7 +245,7 @@ const ProductCustomizerPage = () => {
             key={mockupOverlayData.image_url}
             src={mockupOverlayData.image_url}
             alt="Phone Mockup Overlay"
-            className="absolute object-contain pointer-events-none"
+            className="absolute object-fill pointer-events-none"
             style={{
               left: (mockupOverlayData.mockup_x ?? 0) * scaleFactor,
               top: (mockupOverlayData.mockup_y ?? 0) * scaleFactor,
