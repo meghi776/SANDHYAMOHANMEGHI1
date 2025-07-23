@@ -82,6 +82,7 @@ interface CustomizerBottomControlsProps {
   handleTextContentInput: (e: React.FormEvent<HTMLDivElement>, id: string) => void;
   deleteElement: (id: string) => void;
   handleRotateElement: (id: string, direction: 'left' | 'right') => void;
+  updateElement: (id: string, updates: Partial<DesignElement>) => void; // Add updateElement prop
 }
 
 const CustomizerBottomControls: React.FC<CustomizerBottomControlsProps> = ({
@@ -143,7 +144,11 @@ const CustomizerBottomControls: React.FC<CustomizerBottomControlsProps> = ({
   handleTextContentInput,
   deleteElement,
   handleRotateElement,
+  handleBuyNowClick,
+  updateElement, // Destructure updateElement
 }) => {
+  console.log("CustomizerBottomControls: handleBuyNowClick prop value:", handleBuyNowClick);
+
   const showDeleteButton = selectedElementId && designElements.find(el => el.id === selectedElementId)?.type === 'image';
 
   return (
@@ -161,14 +166,8 @@ const CustomizerBottomControls: React.FC<CustomizerBottomControlsProps> = ({
                   style={{ fontFamily: font }}
                   onClick={() => {
                     setCurrentFontFamily(font);
-                    // Update element directly via prop
                     if (selectedElementId) {
-                      const updatedElement = { ...selectedTextElement, fontFamily: font };
-                      const updatedElements = designElements.map(el => el.id === selectedElementId ? updatedElement : el);
-                      // This requires a setter for designElements from the hook
-                      // For now, assuming updateElement handles this
-                      // This is why the hook approach is better, as updateElement is already there
-                      // Need to pass updateElement to this component
+                      updateElement(selectedElementId, { fontFamily: font }); // Use updateElement
                     }
                   }}
                 >
@@ -185,11 +184,8 @@ const CustomizerBottomControls: React.FC<CustomizerBottomControlsProps> = ({
                         style={{ backgroundColor: color }}
                         onClick={() => {
                             setCurrentTextColor(color);
-                            // Update element directly via prop
                             if (selectedElementId) {
-                              const updatedElement = { ...selectedTextElement, color: color };
-                              const updatedElements = designElements.map(el => el.id === selectedElementId ? updatedElement : el);
-                              // Need to pass updateElement to this component
+                              updateElement(selectedElementId, { color: color }); // Use updateElement
                             }
                         }}
                         title={color}
