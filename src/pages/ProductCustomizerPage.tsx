@@ -110,8 +110,8 @@ const ProductCustomizerPage = () => {
   const canvasContentRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
-  const { user, session } = useSession(); // Get user and session from context
-
+  const { user, session } = useSession();
+  const [userRole, setUserRole] = useState<'user' | 'admin' | null>(null);
   const { isDemoOrderModalOpen, setIsDemoOrderModalOpen, demoCustomerName, demoOrderPrice, setDemoOrderDetails, demoOrderAddress } = useDemoOrderModal();
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -177,14 +177,6 @@ const ProductCustomizerPage = () => {
   const lastCaretPosition = useRef<{ node: Node | null; offset: number } | null>(null);
 
   const [isSavedDesignsModalOpen, setIsSavedDesignsModalOpen] = useState(false);
-
-  // New states for individual address components
-  const [customerHouseNo, setCustomerHouseNo] = useState('');
-  const [customerVillage, setCustomerVillage] = useState('');
-  const [customerPincode, setCustomerPincode] = useState('');
-  const [customerMandal, setCustomerMandal] = useState('');
-  const [customerDistrict, setCustomerDistrict] = useState('');
-
 
   useEffect(() => {
     const updateCanvasDimensions = () => {
@@ -293,31 +285,26 @@ const ProductCustomizerPage = () => {
     }
   }, [productId, setDemoOrderDetails]);
 
-  // New useEffect to pre-fill customer details if user is logged in
   useEffect(() => {
-    if (user && user.profile) {
-      const fullName = [user.profile.first_name, user.profile.last_name].filter(Boolean).join(' ');
-      setCustomerName(fullName);
-      if (user.profile.phone) {
-        setCustomerPhone(user.profile.phone);
+    const fetchUserRole = async () => {
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        if (error) {
+          console.error("Error fetching user role:", error);
+          setUserRole(null);
+        } else if (data) {
+          setUserRole(data.role);
+        }
+      } else {
+        setUserRole(null);
       }
-      // Pre-fill address components
-      setCustomerHouseNo(user.profile.house_no || '');
-      setCustomerVillage(user.profile.village || '');
-      setCustomerPincode(user.profile.pincode || '');
-      setCustomerMandal(user.profile.mandal || '');
-      setCustomerDistrict(user.profile.district || '');
-    } else {
-      // Clear fields if user logs out or is not logged in
-      setCustomerName('');
-      setCustomerPhone('');
-      setCustomerHouseNo('');
-      setCustomerVillage('');
-      setCustomerPincode('');
-      setCustomerMandal('');
-      setCustomerDistrict('');
-    }
-  }, [user]); // Depend on the user object from session context
+    };
+    fetchUserRole();
+  }, [user]);
 
   useEffect(() => {
     return () => {
@@ -556,6 +543,7 @@ const ProductCustomizerPage = () => {
 
     const { x: unscaledClientX, y: unscaledClientY } = getUnscaledCoords(e.clientX, e.clientY);
 
+    // Calculate initial diagonal distance from element's top-left corner to the mouse click
     const initialDiagonalDistance = Math.sqrt(
       Math.pow(unscaledClientX - element.x, 2) +
       Math.pow(unscaledClientY - element.y, 2)
@@ -588,6 +576,7 @@ const ProductCustomizerPage = () => {
 
     const { x: unscaledClientX, y: unscaledClientY } = getUnscaledCoords(e.touches[0].clientX, e.touches[0].clientY);
 
+    // Calculate initial diagonal distance from element's top-left corner to the touch point
     const initialDiagonalDistance = Math.sqrt(
       Math.pow(unscaledClientX - element.x, 2) +
       Math.pow(unscaledClientY - element.y, 2)
@@ -626,16 +615,25 @@ const ProductCustomizerPage = () => {
 
     if (handle === 'br') {
       if (element.type === 'text') {
-        const deltaX = currentUnscaledX - resizeState.current.startX;
-        const deltaY = currentUnscaledY - resizeState.current.startY;
-        newWidth = Math.max(20, initialWidth + deltaX);
-        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5));
-        
+        // Calculate new diagonal distance from element's top-left corner to current mouse position
+        const currentDiagonalDistance = Math.sqrt(
+          Math.pow(currentUnscaledX - initialElementX, 2) +
+          Math.pow(currentUnscaledY - initialElementY, 2)
+        );
+
+        if (initialDiagonalDistance === 0) return; // Avoid division by zero
+
+        const scale = currentDiagonalDistance / initialDiagonalDistance;
+
+        // Apply scale to initial width and font size
+        newWidth = Math.max(20, initialWidth * scale);
+        newFontSize = Math.max(10, Math.min(100, initialFontSize * scale)); // Scale font size proportionally
+
         updateElement(activeElementId, {
           width: newWidth,
           fontSize: newFontSize,
         });
-      } else {
+      } else { // Image
         const currentDiagonalDistance = Math.sqrt(
           Math.pow(currentUnscaledX - initialElementX, 2) +
           Math.pow(currentUnscaledY - initialElementY, 2)
@@ -673,10 +671,19 @@ const ProductCustomizerPage = () => {
 
     if (handle === 'br') {
       if (element.type === 'text') {
-        const deltaX = currentUnscaledX - resizeState.current.startX;
-        const deltaY = currentUnscaledY - resizeState.current.startY;
-        newWidth = Math.max(20, initialWidth + deltaX);
-        newFontSize = Math.max(10, Math.min(100, initialFontSize + deltaY * 0.5));
+        // Calculate new diagonal distance from element's top-left corner to current touch position
+        const currentDiagonalDistance = Math.sqrt(
+          Math.pow(currentUnscaledX - initialElementX, 2) +
+          Math.pow(currentUnscaledY - initialElementY, 2)
+        );
+
+        if (initialDiagonalDistance === 0) return; // Avoid division by zero
+
+        const scale = currentDiagonalDistance / initialDiagonalDistance;
+
+        // Apply scale to initial width and font size
+        newWidth = Math.max(20, initialWidth * scale);
+        newFontSize = Math.max(10, Math.min(100, initialFontSize * scale)); // Scale font size proportionally
         
         updateElement(activeElementId, {
           width: newWidth,
@@ -1549,16 +1556,6 @@ const ProductCustomizerPage = () => {
         setCustomerName={setCustomerName}
         customerPhone={customerPhone}
         setCustomerPhone={setCustomerPhone}
-        customerHouseNo={customerHouseNo} // Pass new props
-        setCustomerHouseNo={setCustomerHouseNo} // Pass new props
-        customerVillage={customerVillage} // Pass new props
-        setCustomerVillage={setCustomerVillage} // Pass new props
-        customerPincode={customerPincode} // Pass new props
-        setCustomerPincode={setCustomerPincode} // Pass new props
-        customerMandal={customerMandal} // Pass new props
-        setCustomerMandal={setCustomerMandal} // Pass new props
-        customerDistrict={customerDistrict} // Pass new props
-        setCustomerDistrict={setCustomerDistrict} // Pass new props
         paymentMethod={paymentMethod}
         setPaymentMethod={setPaymentMethod}
         isPlacingOrder={isPlacingOrder}

@@ -25,12 +25,7 @@ interface Profile {
   last_name: string | null;
   role: 'user' | 'admin';
   email: string | null;
-  phone: string | null;
-  house_no: string | null; // New field
-  village: string | null; // New field
-  pincode: string | null; // New field
-  mandal: string | null; // New field
-  district: string | null; // New field
+  phone: string | null; // Added phone field
 }
 
 const UserManagementPage = () => {
@@ -44,11 +39,6 @@ const UserManagementPage = () => {
   const [editFirstName, setEditFirstName] = useState('');
   const [editLastName, setEditLastName] = useState('');
   const [editRole, setEditRole] = useState<'user' | 'admin'>('user');
-  const [editHouseNo, setEditHouseNo] = useState(''); // New state
-  const [editVillage, setEditVillage] = useState(''); // New state
-  const [editPincode, setEditPincode] = useState(''); // New state
-  const [editMandal, setEditMandal] = useState(''); // New state
-  const [editDistrict, setEditDistrict] = useState(''); // New state
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newFirstName, setNewFirstName] = useState('');
@@ -101,11 +91,6 @@ const UserManagementPage = () => {
     setEditFirstName(profile.first_name || '');
     setEditLastName(profile.last_name || '');
     setEditRole(profile.role);
-    setEditHouseNo(profile.house_no || ''); // Set new address fields
-    setEditVillage(profile.village || '');
-    setEditPincode(profile.pincode || '');
-    setEditMandal(profile.mandal || '');
-    setEditDistrict(profile.district || '');
     setIsEditModalOpen(true);
   };
 
@@ -124,16 +109,7 @@ const UserManagementPage = () => {
   const handleSaveEdit = async () => {
     if (!currentProfile) return;
     const toastId = showLoading("Saving profile changes...");
-    const { error } = await supabase.from('profiles').update({
-      first_name: editFirstName,
-      last_name: editLastName,
-      role: editRole,
-      house_no: editHouseNo, // Update new address fields
-      village: editVillage,
-      pincode: editPincode,
-      mandal: editMandal,
-      district: editDistrict,
-    }).eq('id', currentProfile.id);
+    const { error } = await supabase.from('profiles').update({ first_name: editFirstName, last_name: editLastName, role: editRole }).eq('id', currentProfile.id);
     dismissToast(toastId);
     if (error) showError(`Failed to update profile: ${error.message}`);
     else {
@@ -236,14 +212,9 @@ const UserManagementPage = () => {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
+                  <TableHead>Phone</TableHead> {/* New TableHead for Phone */}
                   <TableHead>First Name</TableHead>
                   <TableHead>Last Name</TableHead>
-                  <TableHead>House No</TableHead> {/* New TableHead */}
-                  <TableHead>Village</TableHead> {/* New TableHead */}
-                  <TableHead>Pincode</TableHead> {/* New TableHead */}
-                  <TableHead>Mandal</TableHead> {/* New TableHead */}
-                  <TableHead>District</TableHead> {/* New TableHead */}
                   <TableHead>Role</TableHead>
                   {isAdmin && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
@@ -253,14 +224,9 @@ const UserManagementPage = () => {
                   <TableRow key={profile.id}>
                     <TableCell className="font-medium">{profile.id}</TableCell>
                     <TableCell>{profile.email || 'N/A'}</TableCell>
-                    <TableCell>{profile.phone || 'N/A'}</TableCell>
+                    <TableCell>{profile.phone || 'N/A'}</TableCell> {/* New TableCell for Phone */}
                     <TableCell>{profile.first_name || 'N/A'}</TableCell>
                     <TableCell>{profile.last_name || 'N/A'}</TableCell>
-                    <TableCell>{profile.house_no || 'N/A'}</TableCell> {/* New TableCell */}
-                    <TableCell>{profile.village || 'N/A'}</TableCell> {/* New TableCell */}
-                    <TableCell>{profile.pincode || 'N/A'}</TableCell> {/* New TableCell */}
-                    <TableCell>{profile.mandal || 'N/A'}</TableCell> {/* New TableCell */}
-                    <TableCell>{profile.district || 'N/A'}</TableCell> {/* New TableCell */}
                     <TableCell>{profile.role}</TableCell>
                     {isAdmin && (
                       <TableCell className="text-right">
@@ -283,11 +249,6 @@ const UserManagementPage = () => {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-first-name" className="text-right">First Name</Label><Input id="edit-first-name" value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} className="col-span-3" /></div>
             <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-last-name" className="text-right">Last Name</Label><Input id="edit-last-name" value={editLastName} onChange={(e) => setEditLastName(e.target.value)} className="col-span-3" /></div>
-            <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-house-no" className="text-right">House No</Label><Input id="edit-house-no" value={editHouseNo} onChange={(e) => setEditHouseNo(e.target.value)} className="col-span-3" /></div>
-            <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-village" className="text-right">Village</Label><Input id="edit-village" value={editVillage} onChange={(e) => setEditVillage(e.target.value)} className="col-span-3" /></div>
-            <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-pincode" className="text-right">Pincode</Label><Input id="edit-pincode" value={editPincode} onChange={(e) => setEditPincode(e.target.value)} className="col-span-3" /></div>
-            <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-mandal" className="text-right">Mandal</Label><Input id="edit-mandal" value={editMandal} onChange={(e) => setEditMandal(e.target.value)} className="col-span-3" /></div>
-            <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-district" className="text-right">District</Label><Input id="edit-district" value={editDistrict} onChange={(e) => setEditDistrict(e.target.value)} className="col-span-3" /></div>
             <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-role" className="text-right">Role</Label><Select value={editRole} onValueChange={(value: 'user' | 'admin') => setEditRole(value)}><SelectTrigger className="col-span-3"><SelectValue placeholder="Select a role" /></SelectTrigger><SelectContent><SelectItem value="user">User</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent></Select></div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button><Button onClick={handleSaveEdit}>Save Changes</Button></DialogFooter>

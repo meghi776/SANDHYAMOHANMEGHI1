@@ -1,24 +1,13 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+// Removed direct import of useNavigate and useLocation
 
-// Extend the User type to include profile data
 interface CustomUser extends User {
   user_metadata: {
     first_name?: string;
     last_name?: string;
   };
-  // Add a property for the associated profile data
-  profile?: {
-    first_name?: string;
-    last_name?: string;
-    phone?: string;
-    house_no?: string;
-    village?: string;
-    pincode?: string;
-    mandal?: string;
-    district?: string;
-  } | null;
 }
 
 interface SessionContextType {
@@ -31,8 +20,8 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 interface SessionContextProviderProps {
   children: React.ReactNode;
-  navigate: (path: string) => void;
-  location: { pathname: string };
+  navigate: (path: string) => void; // Type for navigate function
+  location: { pathname: string }; // Simplified type for location object
 }
 
 export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ children, navigate, location }) => {
@@ -40,19 +29,7 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<CustomUser | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const fetchUserProfile = async (userId: string): Promise<any | null> => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('first_name, last_name, phone, house_no, village, pincode, mandal, district') // Fetch new address fields
-      .eq('id', userId)
-      .single();
-    if (error) {
-      console.error("Error fetching user profile:", error);
-      return null;
-    }
-    return data;
-  };
+  // navigate and location are now received as props
 
   useEffect(() => {
     console.log("SessionContext: onAuthStateChange listener setup.");
@@ -73,16 +50,14 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
       });
 
       if (currentSession?.user) {
-        const profileData = await fetchUserProfile(currentSession.user.id);
         setUser(prevUser => {
           const isSameUserId = prevUser?.id === currentSession.user.id;
-          const isSameProfile = JSON.stringify(prevUser?.profile) === JSON.stringify(profileData); // Deep compare profile
-          console.log(`SessionContext: setUser check - isSameUserId: ${isSameUserId}, isSameProfile: ${isSameProfile}`);
-          if (isSameUserId && isSameProfile) {
+          console.log(`SessionContext: setUser check - isSameUserId: ${isSameUserId}`);
+          if (isSameUserId) {
             return prevUser;
           }
-          console.log("SessionContext: User object or profile changed, updating state.");
-          return { ...currentSession.user, profile: profileData };
+          console.log("SessionContext: User object changed, updating state.");
+          return { ...currentSession.user };
         });
       } else {
         console.log("SessionContext: No current user, setting user to null.");
@@ -91,10 +66,14 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
       setLoading(false);
       console.log(`SessionContext: Auth state changed to ${event}. Loading set to false.`);
 
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        // Removed the explicit redirect to '/' from here.
+        // The Auth component's redirectTo prop in Login.tsx will handle the redirect.
+      } else if (event === 'SIGNED_OUT') {
         console.log("SessionContext: Signed out event detected.");
         if (location.pathname.startsWith('/admin')) {
           console.log("SessionContext: Signed out from admin path, redirecting to /login.");
+          // Redirect to login with current path as redirect_to parameter
           navigate(`/login?redirect_to=${encodeURIComponent(location.pathname)}`);
         }
       }
@@ -116,16 +95,14 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
       });
 
       if (initialSession?.user) {
-        const profileData = await fetchUserProfile(initialSession.user.id);
         setUser(prevUser => {
           const isSameUserId = prevUser?.id === initialSession.user.id;
-          const isSameProfile = JSON.stringify(prevUser?.profile) === JSON.stringify(profileData);
-          console.log(`SessionContext: Initial setUser check - isSameUserId: ${isSameUserId}, isSameProfile: ${isSameProfile}`);
-          if (isSameUserId && isSameProfile) {
+          console.log(`SessionContext: Initial setUser check - isSameUserId: ${isSameUserId}`);
+          if (isSameUserId) {
             return prevUser;
           }
-          console.log("SessionContext: Initial user object or profile changed, updating state.");
-          return { ...initialSession.user, profile: profileData };
+          console.log("SessionContext: Initial user object changed, updating state.");
+          return { ...initialSession.user };
         });
       } else {
         console.log("SessionContext: No initial user, setting user to null.");
@@ -135,6 +112,7 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
       console.log("SessionContext: Initial getSession completed. Loading set to false.");
       if (!initialSession && location.pathname.startsWith('/admin')) {
         console.log("SessionContext: No initial session and on admin path, redirecting to /login.");
+        // Redirect to login with current path as redirect_to parameter
         navigate(`/login?redirect_to=${encodeURIComponent(location.pathname)}`);
       }
     });

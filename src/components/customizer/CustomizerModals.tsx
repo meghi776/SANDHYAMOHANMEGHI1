@@ -49,16 +49,6 @@ interface CustomizerModalsProps {
   setCustomerName: (name: string) => void;
   customerPhone: string;
   setCustomerPhone: (phone: string) => void;
-  customerHouseNo: string; // New prop
-  setCustomerHouseNo: (value: string) => void; // New prop
-  customerVillage: string; // New prop
-  setCustomerVillage: (value: string) => void; // New prop
-  customerPincode: string; // New prop
-  setCustomerPincode: (value: string) => void; // New prop
-  customerMandal: string; // New prop
-  setCustomerMandal: (value: string) => void; // New prop
-  customerDistrict: string; // New prop
-  setCustomerDistrict: (value: string) => void; // New prop
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
   isPlacingOrder: boolean;
@@ -94,16 +84,6 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   setCustomerName,
   customerPhone,
   setCustomerPhone,
-  customerHouseNo, // Destructure new prop
-  setCustomerHouseNo, // Destructure new prop
-  customerVillage, // Destructure new prop
-  setCustomerVillage, // Destructure new prop
-  customerPincode, // Destructure new prop
-  setCustomerPincode, // Destructure new prop
-  customerMandal, // Destructure new prop
-  setCustomerMandal, // Destructure new prop
-  customerDistrict, // Destructure new prop
-  setCustomerDistrict, // Destructure new prop
   paymentMethod,
   setPaymentMethod,
   isPlacingOrder,
@@ -124,6 +104,12 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   user, // Destructure user prop
 }) => {
   const [isRazorpayLoading, setIsRazorpayLoading] = useState(false);
+  // New states for individual address components
+  const [customerHouseNo, setCustomerHouseNo] = useState('');
+  const [customerVillage, setCustomerVillage] = useState('');
+  const [customerPincode, setCustomerPincode] = useState('');
+  const [customerMandal, setCustomerMandal] = useState('');
+  const [customerDistrict, setCustomerDistrict] = useState('');
   const [customerAlternativePhone, setCustomerAlternativePhone] = useState(''); // New state
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
   const [isPincodeValid, setIsPincodeValid] = useState(false); // New state for pincode validity
