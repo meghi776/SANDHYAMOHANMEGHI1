@@ -234,16 +234,16 @@ const ProductCustomizerPage = () => {
         const mockup = productData.mockups.length > 0 ? productData.mockups[0] : null;
         const proxiedMockupUrl = mockup?.image_url ? proxyImageUrl(mockup.image_url) : null;
         
-        // Calculate centered position for the mockup
+        // Use mockup_x and mockup_y from the database, defaulting to 0 if null
+        const effectiveMockupX = mockup?.mockup_x ?? 0;
+        const effectiveMockupY = mockup?.mockup_y ?? 0;
         const effectiveMockupWidth = mockup?.mockup_width ?? productData.canvas_width;
         const effectiveMockupHeight = mockup?.mockup_height ?? productData.canvas_height;
-        const centeredMockupX = (productData.canvas_width - effectiveMockupWidth) / 2;
-        const centeredMockupY = (productData.canvas_height - effectiveMockupHeight) / 2;
 
         setMockupOverlayData({
           image_url: proxiedMockupUrl,
-          mockup_x: centeredMockupX, // Always center X
-          mockup_y: centeredMockupY, // Always center Y
+          mockup_x: effectiveMockupX,
+          mockup_y: effectiveMockupY,
           mockup_width: effectiveMockupWidth,
           mockup_height: effectiveMockupHeight,
           mockup_rotation: mockup?.mockup_rotation ?? 0,
@@ -252,8 +252,8 @@ const ProductCustomizerPage = () => {
 
         console.log("Mockup Overlay Data:", {
           image_url: proxiedMockupUrl,
-          mockup_x: centeredMockupX,
-          mockup_y: centeredMockupY,
+          mockup_x: effectiveMockupX,
+          mockup_y: effectiveMockupY,
           mockup_width: effectiveMockupWidth,
           mockup_height: effectiveMockupHeight,
           mockup_rotation: mockup?.mockup_rotation ?? 0,
