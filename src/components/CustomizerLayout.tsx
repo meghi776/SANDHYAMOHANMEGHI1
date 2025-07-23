@@ -6,7 +6,7 @@ const CustomizerLayout = () => {
   return (
     <div className="flex flex-col h-screen"> {/* Changed min-h-screen to h-screen and added flex-col */}
       {/* No Header component here */}
-      <main className="flex-grow pt-1 overflow-y-auto"> {/* Added overflow-y-auto */}
+      <main className="flex-grow pt-0 overflow-y-auto"> {/* Removed pt-1 */}
         <Outlet />
       </main>
       <Footer /> {/* Include the Footer */}

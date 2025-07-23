@@ -167,6 +167,4 @@
 }
 
 /* Custom padding-bottom for customizer page */
-.pb-65 {
-  padding-bottom: 65px; /* Changed from 20px to 65px */
-}
+/* Removed .pb-65 as it's no longer needed with fixed bottom controls */

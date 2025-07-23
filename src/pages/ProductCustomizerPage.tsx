@@ -1269,14 +1269,15 @@ const ProductCustomizerPage = () => {
   const currentSelectedElement = designElements.find(el => el.id === selectedElementId) || null;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-screen"> {/* Changed h-full to h-screen */}
       <DesignerPageHeader
         title={product?.name || "Customize Cover"}
         selectedElement={currentSelectedElement}
         onDeleteElement={deleteElement}
       />
       
-      <div className="relative flex-1 flex flex-col md:flex-row overflow-y-auto pt-14 pb-65 z-1"> {/* Changed overflow-hidden to overflow-y-auto */}
+      {/* Main content area: takes space between header and bottom controls */}
+      <div className="flex-1 flex flex-col md:flex-row pt-14 overflow-auto"> {/* Removed pb-65, changed overflow-y-auto to overflow-auto */}
         {loading && (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -1289,7 +1290,7 @@ const ProductCustomizerPage = () => {
         )}
 
         {!loading && !error && product && (
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          <>
             <div
               ref={designAreaRef}
               className="flex-1 flex items-center justify-center relative overflow-hidden px-4"
@@ -1444,7 +1445,7 @@ const ProductCustomizerPage = () => {
                 )}
               </div>
             </div>
-          </div>
+          </>
         )}
         <input
           type="file"
@@ -1455,6 +1456,7 @@ const ProductCustomizerPage = () => {
         />
       </div>
 
+      {/* Bottom controls - now fixed at the bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg p-1 flex flex-wrap justify-center items-center gap-1 border-t border-gray-200 dark:border-gray-700 z-10">
         {selectedElementId && designElements.find(el => el.id === selectedElementId)?.type === 'text' ? (
           <div className="flex flex-col w-full items-center">
