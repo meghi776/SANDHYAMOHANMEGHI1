@@ -755,15 +755,29 @@ export const useCustomizerState = () => {
       }));
       console.log("captureDesignForOrder: All images pre-load attempts completed.");
 
+      // Calculate dynamic scale based on rendered size vs. target size
+      const canvasRect = canvasContentRef.current.getBoundingClientRect();
+      const actualRenderedWidth = canvasRect.width;
+      const actualRenderedHeight = canvasRect.height;
+
+      // The scale should be the ratio of the desired output dimension to the actual rendered dimension.
+      // Use the larger scale to ensure no loss of detail, then html2canvas will fit it to width/height.
+      const dynamicScale = Math.max(
+        product.canvas_width / actualRenderedWidth,
+        product.canvas_height / actualRenderedHeight
+      );
+
       console.log("captureDesignForOrder: Initiating html2canvas capture for element:", canvasContentRef.current);
+      console.log(`captureDesignForOrder: Target output: ${product.canvas_width}x${product.canvas_height}, Rendered size: ${actualRenderedWidth}x${actualRenderedHeight}, Dynamic Scale: ${dynamicScale}`);
+
       const canvas = await html2canvas(canvasContentRef.current, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: null, // Let CSS background handle it
-        scale: 3, 
-        width: product.canvas_width, 
-        height: product.canvas_height,
-        x: 0,
+        scale: dynamicScale, // Use dynamically calculated scale
+        width: product.canvas_width, // Target output width
+        height: product.canvas_height, // Target output height
+        x: 0, // Capture from the top-left corner of the element
         y: 0,
         foreignObjectRendering: true, // Added this option
       });
