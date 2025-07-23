@@ -9,6 +9,7 @@ import { uploadFileToSupabase, deleteFileFromSupabase } from '@/utils/supabaseSt
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import imageCompression from 'browser-image-compression';
 import { showError as showToastError } from '@/utils/toast';
+import html2canvas from 'html2canvas'; // Added this import
 
 // Define types for props to ensure type safety
 interface Product {
