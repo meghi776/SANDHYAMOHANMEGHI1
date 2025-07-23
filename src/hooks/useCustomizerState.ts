@@ -524,10 +524,10 @@ export const useCustomizerState = () => {
       initialWidth: element.width,
       initialHeight: element.height,
       initialFontSize: element.type === 'text' ? (element.fontSize || 35) : 0,
-      activeElementId: id,
       initialElementX: element.x,
       initialElementY: element.y,
       initialDiagonalDistance: initialDiagonalDistance,
+      activeElementId: id,
     };
 
     document.addEventListener('mousemove', onResizeMouseMove);
@@ -701,6 +701,7 @@ export const useCustomizerState = () => {
 
   const captureDesignForOrder = useCallback(async () => {
     if (!canvasContentRef.current || !product) {
+      console.error("captureDesignForOrder: Pre-check failed - Missing canvasContentRef or product.");
       return null;
     }
 
@@ -714,51 +715,73 @@ export const useCustomizerState = () => {
         const textDiv = textElementRefs.current.get(el.id);
         if (textDiv) {
           textElementsToRestore.push({ element: textDiv, originalOverflow: textDiv.style.overflow });
-          textDiv.style.overflow = 'visible';
+          textDiv.style.overflow = 'visible'; // Ensure text is not clipped
         }
       }
     });
 
+    // Temporarily hide selected element border and mockup overlay
+    if (selectedElementDiv) {
+      selectedElementDiv.classList.remove('border-2', 'border-blue-500');
+    }
+    if (mockupImageElement instanceof HTMLElement) {
+      originalMockupDisplay = mockupImageElement.style.display;
+      mockupImageElement.style.display = 'none';
+    }
+
     try {
+      // Pre-load all images to ensure they are in cache for html2canvas
+      const allImagesToLoad = designElements.filter(el => el.type === 'image').map(el => el.value);
       if (mockupOverlayData?.image_url) {
-        await new Promise((resolve) => {
+        allImagesToLoad.push(mockupOverlayData.image_url);
+      }
+
+      console.log(`captureDesignForOrder: Attempting to pre-load ${allImagesToLoad.length} images.`);
+      await Promise.all(allImagesToLoad.map(url => {
+        return new Promise<void>((resolve) => {
           const img = new window.Image();
           img.crossOrigin = 'Anonymous';
-          img.onload = () => resolve(true);
-          img.onerror = (e) => {
-            console.error("Error loading mockup image for html2canvas:", e);
-            resolve(false); 
+          img.onload = () => {
+            console.log(`Image loaded: ${url.substring(0, 50)}...`);
+            resolve();
           };
-          img.src = proxyImageUrl(mockupOverlayData.image_url);
+          img.onerror = (e) => {
+            console.warn(`Failed to pre-load image (might be CORS): ${url.substring(0, 50)}...`, e);
+            resolve(); // Resolve to not block, but log the warning
+          };
+          img.src = proxyImageUrl(url);
         });
-      }
+      }));
+      console.log("captureDesignForOrder: All images pre-load attempts completed.");
 
-      if (selectedElementDiv) {
-        selectedElementDiv.classList.remove('border-2', 'border-blue-500');
-      }
-
-      if (mockupImageElement instanceof HTMLElement) {
-        originalMockupDisplay = mockupImageElement.style.display;
-        mockupImageElement.style.display = 'none';
-      }
-
+      console.log("captureDesignForOrder: Initiating html2canvas capture for element:", canvasContentRef.current);
       const canvas = await html2canvas(canvasContentRef.current, {
         useCORS: true,
         allowTaint: true,
-        backgroundColor: null,
+        backgroundColor: null, // Let CSS background handle it
         scale: 3, 
         width: product.canvas_width, 
         height: product.canvas_height,
         x: 0,
         y: 0,
+        foreignObjectRendering: true, // Added this option
       });
+      console.log("captureDesignForOrder: html2canvas capture finished.");
+
       const dataUrl = canvas.toDataURL('image/png');
+      console.log("captureDesignForOrder: Generated Data URL length:", dataUrl.length);
+      if (!dataUrl || dataUrl.length < 100) { // A very small data URL usually means a blank image (e.g., "data:,")
+        console.error("captureDesignForOrder: canvas.toDataURL returned empty or very small data URL, indicating a blank capture.");
+        return null;
+      }
+      console.log("captureDesignForOrder: Data URL successfully generated.");
       return dataUrl;
 
     } catch (err: any) {
-      console.error("Detailed Error capturing design for order:", err);
+      console.error("captureDesignForOrder: Detailed Error during capture process:", err);
       return null;
     } finally {
+      // Restore elements
       if (mockupImageElement instanceof HTMLElement) {
         mockupImageElement.style.display = originalMockupDisplay;
       }
@@ -768,6 +791,7 @@ export const useCustomizerState = () => {
       textElementsToRestore.forEach(({ element, originalOverflow }) => {
         element.style.overflow = originalOverflow;
       });
+      console.log("captureDesignForOrder: Cleanup complete.");
     }
   }, [product, selectedElementId, designElements, mockupOverlayData]);
 
