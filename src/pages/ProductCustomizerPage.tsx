@@ -234,22 +234,28 @@ const ProductCustomizerPage = () => {
         const mockup = productData.mockups.length > 0 ? productData.mockups[0] : null;
         const proxiedMockupUrl = mockup?.image_url ? proxyImageUrl(mockup.image_url) : null;
         
+        // Calculate centered position for the mockup
+        const effectiveMockupWidth = mockup?.mockup_width ?? productData.canvas_width;
+        const effectiveMockupHeight = mockup?.mockup_height ?? productData.canvas_height;
+        const centeredMockupX = (productData.canvas_width - effectiveMockupWidth) / 2;
+        const centeredMockupY = (productData.canvas_height - effectiveMockupHeight) / 2;
+
         setMockupOverlayData({
           image_url: proxiedMockupUrl,
-          mockup_x: mockup?.mockup_x ?? 0,
-          mockup_y: mockup?.mockup_y ?? 0,
-          mockup_width: mockup?.mockup_width ?? productData.canvas_width,
-          mockup_height: mockup?.mockup_height ?? productData.canvas_height,
+          mockup_x: centeredMockupX, // Always center X
+          mockup_y: centeredMockupY, // Always center Y
+          mockup_width: effectiveMockupWidth,
+          mockup_height: effectiveMockupHeight,
           mockup_rotation: mockup?.mockup_rotation ?? 0,
           design_data: mockup?.design_data || null,
         });
 
         console.log("Mockup Overlay Data:", {
           image_url: proxiedMockupUrl,
-          mockup_x: mockup?.mockup_x ?? 0,
-          mockup_y: mockup?.mockup_y ?? 0,
-          mockup_width: mockup?.mockup_width ?? productData.canvas_width,
-          mockup_height: mockup?.mockup_height ?? productData.canvas_height,
+          mockup_x: centeredMockupX,
+          mockup_y: centeredMockupY,
+          mockup_width: effectiveMockupWidth,
+          mockup_height: effectiveMockupHeight,
           mockup_rotation: mockup?.mockup_rotation ?? 0,
         });
 
@@ -495,7 +501,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaled1X, 2) +
+        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) +
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2)
       );
       const scaleFactorChange = newDistance / initialDistance;
@@ -1258,7 +1264,7 @@ const ProductCustomizerPage = () => {
     setBlurredBackgroundImageUrl(null);
   };
 
-  const isBuyNowDisabled = loading || isPlacingOrder || (product && product.inventory !== null && product.inventory <= 0) || designElements.filter(el => el.type === 'image').length === 0 || designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
+  const isBuyNowDisabled = loading || isPlacingOrder || (product && product.inventory !== null && product.inventory <= 0) || designElements.filter(el => el.type !== 'text').length === 0 || designElements.some(el => el.type === 'image' && el.value.startsWith('blob:'));
 
   const currentSelectedElement = designElements.find(el => el.id === selectedElementId) || null;
 
