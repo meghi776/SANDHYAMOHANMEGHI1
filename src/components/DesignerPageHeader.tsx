@@ -5,21 +5,7 @@ import { ArrowLeft, Trash2, User, LogIn, Eye } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { showError } from '@/utils/toast';
 import { useDemoOrderModal } from '@/contexts/DemoOrderModalContext';
-
-interface DesignElement {
-  id: string;
-  type: 'text' | 'image';
-  value: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  fontSize?: number;
-  color?: string;
-  fontFamily?: string;
-  textShadow?: boolean;
-  rotation?: number;
-}
+import { DesignElement } from '@/hooks/useCustomizerState'; // Import DesignElement
 
 interface DesignerPageHeaderProps {
   title: string;
