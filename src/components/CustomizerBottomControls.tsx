@@ -17,6 +17,8 @@ import {
   Save,
   FolderOpen,
   Wand2,
+  SquareDashedBottomCode, // For Add Sticker
+  LayoutGrid, // For Readymade
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -232,21 +234,25 @@ const CustomizerBottomControls: React.FC<CustomizerBottomControlsProps> = ({
           </div>
         ) : (
           <>
+            <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={isMobile ? handleCapacitorImageSelect : () => fileInputRef.current?.click()}>
+              <Image className="h-5 w-5" />
+              <span className="text-xs">Your Photo</span>
+            </Button>
             <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={handleAddTextElement}>
               <Text className="h-5 w-5" />
               <span className="text-xs">Add Text</span>
             </Button>
-            <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={isMobile ? handleCapacitorImageSelect : () => fileInputRef.current?.click()}>
-              <Image className="h-5 w-5" />
-              <span className="text-xs">Your Photo</span>
+            <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={() => { /* Placeholder for Add Sticker */ }}>
+              <SquareDashedBottomCode className="h-5 w-5" />
+              <span className="text-xs">Add Sticker</span>
             </Button>
             <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={() => { setSelectedElementId(null); setIsBackColorPaletteOpen(true); }}>
               <Palette className="h-5 w-5" />
               <span className="text-xs">Back Color</span>
             </Button>
-            <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={() => setIsSavedDesignsModalOpen(true)}>
-              <Save className="h-5 w-5" />
-              <span className="text-xs">Save</span>
+            <Button variant="ghost" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105" onClick={() => { /* Placeholder for Readymade */ }}>
+              <LayoutGrid className="h-5 w-5" />
+              <span className="text-xs">Readymade</span>
             </Button>
             <Button variant="default" className="flex flex-col h-auto p-1 transition-transform duration-200 hover:scale-105 animate-pulse-highlight" onClick={handleBuyNowClick} disabled={isBuyNowDisabled}>
               <ShoppingCart className="h-5 w-5" />

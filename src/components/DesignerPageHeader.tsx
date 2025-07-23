@@ -1,10 +1,7 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trash2, User, LogIn, Eye } from 'lucide-react';
-import { useSession } from '@/contexts/SessionContext';
-import { showError } from '@/utils/toast';
-import { useDemoOrderModal } from '@/contexts/DemoOrderModalContext';
+import { ArrowLeft, Check, Trash2 } from 'lucide-react'; // Removed Eye, User, LogIn
 import { DesignElement } from '@/hooks/useCustomizerState'; // Import DesignElement
 
 interface DesignerPageHeaderProps {
@@ -15,8 +12,6 @@ interface DesignerPageHeaderProps {
 
 const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selectedElement, onDeleteElement }) => {
   const navigate = useNavigate();
-  const { user, loading: sessionLoading } = useSession();
-  const { setIsDemoOrderModalOpen, setDemoOrderDetails } = useDemoOrderModal();
 
   const handleBackClick = () => {
     navigate(-1);
@@ -28,65 +23,25 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
     }
   };
 
-  const handlePreviewClick = () => {
-    if (sessionLoading) {
-      showError("Session is still loading. Please wait a moment.");
-      return;
-    }
-    if (!user) {
-      showError("Please log in to place a demo order.");
-      navigate('/login');
-      return;
-    }
-    setDemoOrderDetails('Demo User', '0.00', 'Preview Address'); 
-    setIsDemoOrderModalOpen(true);
-  };
-
   const showDeleteButton = selectedElement && selectedElement.type === 'image';
-
-  const renderAuthButtons = () => {
-    if (sessionLoading) {
-      return <Button variant="ghost" disabled>Loading...</Button>;
-    }
-
-    if (user) {
-      return (
-        <>
-          <Link to="/orders">
-            <Button variant="ghost" size="sm" className="flex-shrink-0">
-              <User className="mr-1 h-4 w-4" />
-              My Account
-            </Button>
-          </Link>
-        </>
-      );
-    } else {
-      return (
-        <Link to="/login">
-          <Button variant="ghost" size="sm" className="flex-shrink-0">
-            <LogIn className="mr-1 h-4 w-4" />
-            Login / Register
-          </Button>
-        </Link>
-      );
-    }
-  };
 
   return (
     <div className="fixed top-0 w-full z-50 h-14 flex items-center justify-between py-2 px-4 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4 flex-shrink-0">
+      <Button variant="ghost" size="icon" onClick={handleBackClick} className="flex-shrink-0">
         <ArrowLeft className="h-5 w-5" />
       </Button>
+      <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate max-w-[calc(100%-120px)] text-center">
+        {title}
+      </h1>
       <div className="flex items-center space-x-2 flex-shrink-0">
         {showDeleteButton && (
           <Button variant="destructive" size="icon" onClick={handleDeleteClick} title="Delete Selected Image">
             <Trash2 className="h-5 w-5" />
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={handlePreviewClick} className="flex-shrink-0">
-          <Eye className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="flex-shrink-0">
+          <Check className="h-5 w-5" />
         </Button>
-        {renderAuthButtons()}
       </div>
     </div>
   );
