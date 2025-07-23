@@ -104,7 +104,7 @@ const ProductCustomizerPage = () => {
   const [currentTextShadowEnabled, setCurrentTextShadowEnabled] = useState<boolean>(false);
   const [blurredBackgroundImageUrl, setBlurredBackgroundImageUrl] = useState<string | null>(null);
   const [isBackColorPaletteOpen, setIsBackColorPaletteOpen] = useState(false);
-  const [selectedCanvasColor, setSelectedCanvasColor] = useState<string | null>('#FFFFFF');
+  const [selectedCanvasColor, setSelectedCanvasColor] = useState<string | null>('#000000'); // Changed default to black
 
   const designAreaRef = useRef<HTMLDivElement>(null);
   const canvasContentRef = useRef<HTMLDivElement>(null);
@@ -495,7 +495,7 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) +
+        Math.pow(unscaledTouch2X - unscaled1X, 2) +
         Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2)
       );
       const scaleFactorChange = newDistance / initialDistance;
