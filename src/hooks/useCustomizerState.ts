@@ -733,9 +733,7 @@ export const useCustomizerState = () => {
     try {
       // Pre-load all images to ensure they are in cache for html2canvas
       const allImagesToLoad = designElements.filter(el => el.type === 'image').map(el => el.value);
-      if (mockupOverlayData?.image_url) {
-        allImagesToLoad.push(mockupOverlayData.image_url);
-      }
+      // No need to preload mockupOverlayData.image_url as it's hidden.
 
       console.log(`captureDesignForOrder: Attempting to pre-load ${allImagesToLoad.length} images.`);
       await Promise.all(allImagesToLoad.map(url => {
@@ -755,37 +753,59 @@ export const useCustomizerState = () => {
       }));
       console.log("captureDesignForOrder: All images pre-load attempts completed.");
 
-      // Calculate dynamic scale based on rendered size vs. target size
-      const canvasRect = canvasContentRef.current.getBoundingClientRect();
-      const actualRenderedWidth = canvasRect.width;
-      const actualRenderedHeight = canvasRect.height;
-
-      // The scale should be the ratio of the desired output dimension to the actual rendered dimension.
-      // Use the larger scale to ensure no loss of detail, then html2canvas will fit it to width/height.
-      const dynamicScale = Math.max(
-        product.canvas_width / actualRenderedWidth,
-        product.canvas_height / actualRenderedHeight
-      );
-
+      // Capture the canvas content at a high resolution based on its *rendered* size
+      // We will then scale this captured image to the product's canvas dimensions.
+      const captureScale = 3; // A fixed high scale for better quality
+      
       console.log("captureDesignForOrder: Initiating html2canvas capture for element:", canvasContentRef.current);
-      console.log(`captureDesignForOrder: Target output: ${product.canvas_width}x${product.canvas_height}, Rendered size: ${actualRenderedWidth}x${actualRenderedHeight}, Dynamic Scale: ${dynamicScale}`);
+      console.log(`captureDesignForOrder: Capture scale: ${captureScale}`);
 
-      const canvas = await html2canvas(canvasContentRef.current, {
+      const capturedCanvas = await html2canvas(canvasContentRef.current, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: null, // Let CSS background handle it
-        scale: dynamicScale, // Use dynamically calculated scale
-        width: product.canvas_width, // Target output width
-        height: product.canvas_height, // Target output height
-        x: 0, // Capture from the top-left corner of the element
-        y: 0,
-        foreignObjectRendering: true, // Added this option
+        scale: captureScale, // Capture at a fixed high scale
+        foreignObjectRendering: true,
+        // Do NOT specify width/height here, let html2canvas determine based on element's rendered size
       });
-      console.log("captureDesignForOrder: html2canvas capture finished.");
+      console.log("captureDesignForOrder: html2canvas capture finished. Captured canvas dimensions:", capturedCanvas.width, "x", capturedCanvas.height);
 
-      const dataUrl = canvas.toDataURL('image/png');
+      // Create a new canvas with the desired product dimensions
+      const finalCanvas = document.createElement('canvas');
+      const finalCtx = finalCanvas.getContext('2d');
+      if (!finalCtx) {
+        throw new Error('Could not get final canvas context');
+      }
+
+      finalCanvas.width = product.canvas_width;
+      finalCanvas.height = product.canvas_height;
+
+      // Calculate drawing dimensions to fit the captured image into the final canvas
+      // while maintaining aspect ratio (object-fit: contain equivalent)
+      const capturedAspectRatio = capturedCanvas.width / capturedCanvas.height;
+      const productAspectRatio = product.canvas_width / product.canvas_height;
+
+      let drawWidth = product.canvas_width;
+      let drawHeight = product.canvas_height;
+      let drawX = 0;
+      let drawY = 0;
+
+      if (capturedAspectRatio > productAspectRatio) {
+        // Captured image is wider than the target canvas aspect ratio
+        drawHeight = product.canvas_width / capturedAspectRatio;
+        drawY = (product.canvas_height - drawHeight) / 2;
+      } else {
+        // Captured image is taller than or equal to the target canvas aspect ratio
+        drawWidth = product.canvas_height * capturedAspectRatio;
+        drawX = (product.canvas_width - drawWidth) / 2;
+      }
+
+      // Draw the captured content onto the final canvas
+      finalCtx.drawImage(capturedCanvas, drawX, drawY, drawWidth, drawHeight);
+
+      const dataUrl = finalCanvas.toDataURL('image/png');
       console.log("captureDesignForOrder: Generated Data URL length:", dataUrl.length);
-      if (!dataUrl || dataUrl.length < 100) { // A very small data URL usually means a blank image (e.g., "data:,")
+      if (!dataUrl || dataUrl.length < 100) {
         console.error("captureDesignForOrder: canvas.toDataURL returned empty or very small data URL, indicating a blank capture.");
         return null;
       }
