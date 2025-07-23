@@ -93,7 +93,7 @@ const ProductCustomizerPage = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = true;
+  const [loading, setLoading] = useState(true); // Corrected this line
   const [error, setError] = useState<string | null>(null);
   const [designElements, setDesignElements] = useState<DesignElement[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
@@ -495,8 +495,8 @@ const ProductCustomizerPage = () => {
       const { x: unscaledTouch2X, y: unscaledTouch2Y } = getUnscaledCoords(touch2.clientX, touch2.clientY);
 
       const newDistance = Math.sqrt(
-        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) + 
-        Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2) 
+        Math.pow(unscaledTouch2X - unscaledTouch1X, 2) +
+        Math.pow(unscaledTouch2Y - unscaledTouch1Y, 2)
       );
       const scaleFactorChange = newDistance / initialDistance;
 
