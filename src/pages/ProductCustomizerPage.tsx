@@ -84,200 +84,190 @@ const ProductCustomizerPage = () => {
       }}
       onClick={handleCanvasClick}
     >
-      <div className="relative w-full h-full flex items-center justify-center p-4"> {/* Padding for the grey border area */}
-        {/* Grey border with rotated text */}
-        <div className="absolute inset-0 border-2 border-gray-300 rounded-xl flex items-center justify-center overflow-hidden">
-          <span className="absolute top-1/2 left-0 -translate-y-1/2 -rotate-90 text-gray-400 text-xs whitespace-nowrap origin-center">Cover This Area Also</span>
-          <span className="absolute top-1/2 right-0 -translate-y-1/2 rotate-90 text-gray-400 text-xs whitespace-nowrap origin-center">Cover This Area Also</span>
-          <span className="absolute top-0 left-1/2 -translate-x-1/2 text-gray-400 text-xs whitespace-nowrap">Cover This Area Also</span>
-          <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-gray-400 text-xs whitespace-nowrap">Cover This Area Also</span>
-        </div>
+      <div
+        ref={canvasContentRef}
+        className="relative shadow-lg overflow-hidden w-full h-full"
+        style={{
+          aspectRatio: `${product.canvas_width} / ${product.canvas_height}`,
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          touchAction: 'none',
+          backgroundColor: selectedCanvasColor || '#FFFFFF',
+          backgroundImage: blurredBackgroundImageUrl ? `url(${blurredBackgroundImageUrl})` : 'none',
+        }}
+        onClick={handleCanvasClick}
+      >
+        {designElements.map(el => (
+          <div
+            key={el.id}
+            data-element-id={el.id}
+            className={`absolute cursor-grab ${selectedElementId === el.id ? 'border-2 border-blue-500' : ''}`}
+            style={{
+              left: el.x * scaleFactor,
+              top: el.y * scaleFactor,
+              transform: `rotate(${el.rotation || 0}deg)`,
+              transformOrigin: 'center center',
+              width: `${el.width * scaleFactor}px`,
+              height: el.type === 'text' ? 'auto' : `${el.height * scaleFactor}px`,
+              zIndex: 5,
+              touchAction: 'none',
+            }}
+            onMouseDown={(e) => handleMouseDown(e, el.id)}
+            onTouchStart={(e) => handleTouchStart(e, el.id)}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {el.type === 'text' ? (
+              <>
+                <div
+                  ref={node => {
+                    if (node) textElementRefs.current.set(el.id, node);
+                    else textElementRefs.current.delete(el.id);
+                  }}
+                  contentEditable={selectedElementId === el.id}
+                  onInput={(e) => handleTextContentInput(e, el.id)}
+                  onBlur={() => {}}
+                  suppressContentEditableWarning={true}
+                  className="outline-none w-full h-full flex items-center justify-center"
+                  style={{
+                    fontSize: `${(el.fontSize || 35) * scaleFactor}px`,
+                    color: el.color,
+                    fontFamily: el.fontFamily,
+                    textShadow: el.textShadow ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none',
+                    wordBreak: 'break-word',
+                    minHeight: `${(el.fontSize || 35) * scaleFactor * 1.2}px`,
+                  }}
+                >
+                  {el.value}
+                </div>
+                {selectedElementId === el.id && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white hover:bg-red-600 z-20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteElement(el.id);
+                      }}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
 
-        <div
-          ref={canvasContentRef}
-          className="relative shadow-lg overflow-hidden w-full h-full bg-white dark:bg-gray-800"
-          style={{
-            aspectRatio: `${product.canvas_width} / ${product.canvas_height}`,
-            backgroundSize: 'cover',
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center',
-            touchAction: 'none',
-            backgroundColor: selectedCanvasColor || '#FFFFFF',
-            backgroundImage: blurredBackgroundImageUrl ? `url(${blurredBackgroundImageUrl})` : 'none',
-          }}
-          onClick={handleCanvasClick}
-        >
-          {designElements.map(el => (
-            <div
-              key={el.id}
-              data-element-id={el.id}
-              className={`absolute cursor-grab ${selectedElementId === el.id ? 'border-2 border-blue-500' : ''}`}
-              style={{
-                left: el.x * scaleFactor,
-                top: el.y * scaleFactor,
-                transform: `rotate(${el.rotation || 0}deg)`,
-                transformOrigin: 'center center',
-                width: `${el.width * scaleFactor}px`,
-                height: el.type === 'text' ? 'auto' : `${el.height * scaleFactor}px`,
-                zIndex: 5,
-                touchAction: 'none',
-              }}
-              onMouseDown={(e) => handleMouseDown(e, el.id)}
-              onTouchStart={(e) => handleTouchStart(e, el.id)}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              {el.type === 'text' ? (
-                <>
-                  <div
-                    ref={node => {
-                      if (node) textElementRefs.current.set(el.id, node);
-                      else textElementRefs.current.delete(el.id);
-                    }}
-                    contentEditable={selectedElementId === el.id}
-                    onInput={(e) => handleTextContentInput(e, el.id)}
-                    onBlur={() => {}}
-                    suppressContentEditableWarning={true}
-                    className="outline-none w-full h-full flex items-center justify-center"
-                    style={{
-                      fontSize: `${(el.fontSize || 35) * scaleFactor}px`,
-                      color: el.color,
-                      fontFamily: el.fontFamily,
-                      textShadow: el.textShadow ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none',
-                      wordBreak: 'break-word',
-                      minHeight: `${(el.fontSize || 35) * scaleFactor * 1.2}px`,
-                    }}
-                  >
-                    {el.value}
-                  </div>
-                  {selectedElementId === el.id && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white hover:bg-red-600 z-20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteElement(el.id);
-                        }}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
+                    <div
+                      className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 rounded-full cursor-nwse-resize z-20"
+                      onMouseDown={(e) => handleResizeMouseDown(e, el.id, 'br')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, el.id, 'br')}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-gray-700 text-white hover:bg-gray-800 z-20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRotateElement(el.id, 'left');
+                      }}
+                    >
+                      <RotateCw className="h-4 w-4 transform rotate-90" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -bottom-2 -left-2 h-6 w-6 rounded-full bg-gray-700 text-white hover:bg-gray-800 z-20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRotateElement(el.id, 'right');
+                      }}
+                    >
+                      <RotateCw className="h-4 w-4 transform -rotate-90" />
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <img
+                  src={proxyImageUrl(el.value)}
+                  alt="design element"
+                  className="w-full h-full object-contain"
+                  crossOrigin="anonymous"
+                />
+                {selectedElementId === el.id && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white hover:bg-red-600 z-20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteElement(el.id);
+                      }}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                    <div
+                      className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 rounded-full cursor-nwse-resize z-20"
+                      onMouseDown={(e) => handleResizeMouseDown(e, el.id, 'br')}
+                      onTouchStart={(e) => handleResizeTouchStart(e, el.id, 'br')}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-gray-700 text-white hover:bg-gray-800 z-20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRotateElement(el.id, 'left');
+                      }}
+                    >
+                      <RotateCw className="h-4 w-4 transform rotate-90" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute -bottom-2 -left-2 h-6 w-6 rounded-full bg-gray-700 text-white hover:bg-gray-800 z-20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRotateElement(el.id, 'right');
+                      }}
+                    >
+                      <RotateCw className="h-4 w-4 transform -rotate-90" />
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        ))}
 
-                      <div
-                        className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 rounded-full cursor-nwse-resize z-20"
-                        onMouseDown={(e) => handleResizeMouseDown(e, el.id, 'br')}
-                        onTouchStart={(e) => handleResizeTouchStart(e, el.id, 'br')}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-gray-700 text-white hover:bg-gray-800 z-20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRotateElement(el.id, 'left');
-                        }}
-                      >
-                        <RotateCw className="h-4 w-4 transform rotate-90" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute -bottom-2 -left-2 h-6 w-6 rounded-full bg-gray-700 text-white hover:bg-gray-800 z-20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRotateElement(el.id, 'right');
-                        }}
-                      >
-                        <RotateCw className="h-4 w-4 transform -rotate-90" />
-                      </Button>
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  <img
-                    src={proxyImageUrl(el.value)}
-                    alt="design element"
-                    className="w-full h-full object-contain"
-                    crossOrigin="anonymous"
-                  />
-                  {selectedElementId === el.id && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white hover:bg-red-600 z-20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteElement(el.id);
-                        }}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                      <div
-                        className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 rounded-full cursor-nwse-resize z-20"
-                        onMouseDown={(e) => handleResizeMouseDown(e, el.id, 'br')}
-                        onTouchStart={(e) => handleResizeTouchStart(e, el.id, 'br')}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-gray-700 text-white hover:bg-gray-800 z-20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRotateElement(el.id, 'left');
-                        }}
-                      >
-                        <RotateCw className="h-4 w-4 transform rotate-90" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute -bottom-2 -left-2 h-6 w-6 rounded-full bg-gray-700 text-white hover:bg-gray-800 z-20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRotateElement(el.id, 'right');
-                        }}
-                      >
-                        <RotateCw className="h-4 w-4 transform -rotate-90" />
-                      </Button>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
+        {mockupOverlayData?.image_url && (
+          <img
+            key={mockupOverlayData.image_url}
+            src={mockupOverlayData.image_url}
+            alt="Phone Mockup Overlay"
+            className="absolute object-contain pointer-events-none"
+            style={{
+              left: (mockupOverlayData.mockup_x ?? 0) * scaleFactor,
+              top: (mockupOverlayData.mockup_y ?? 0) * scaleFactor,
+              width: `${(mockupOverlayData.mockup_width ?? product.canvas_width) * scaleFactor}px`,
+              height: `${(mockupOverlayData.mockup_height ?? product.canvas_height) * scaleFactor}px`,
+              transform: `rotate(${mockupOverlayData.mockup_rotation || 0}deg)`,
+              transformOrigin: 'center center',
+              zIndex: 10,
+            }}
+            crossOrigin="anonymous"
+          />
+        )}
 
-          {mockupOverlayData?.image_url && (
-            <img
-              key={mockupOverlayData.image_url}
-              src={mockupOverlayData.image_url}
-              alt="Phone Mockup Overlay"
-              className="absolute object-contain pointer-events-none"
-              style={{
-                left: (mockupOverlayData.mockup_x ?? 0) * scaleFactor,
-                top: (mockupOverlayData.mockup_y ?? 0) * scaleFactor,
-                width: `${(mockupOverlayData.mockup_width ?? product.canvas_width) * scaleFactor}px`,
-                height: `${(mockupOverlayData.mockup_height ?? product.canvas_height) * scaleFactor}px`,
-                transform: `rotate(${mockupOverlayData.mockup_rotation || 0}deg)`,
-                transformOrigin: 'center center',
-                zIndex: 10,
-              }}
-              crossOrigin="anonymous"
-            />
-          )}
-
-          {!designElements.length && (
-            <div
-              className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 cursor-pointer border-2 border-dashed border-gray-400 rounded-lg"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <PlusCircle className="h-12 w-12 mb-2" />
-              <p className="text-lg font-medium">Add Your Image</p>
-            </div>
-          )}
-        </div>
+        {!designElements.length && (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <PlusCircle className="h-12 w-12 mb-2" />
+            <p className="text-lg font-medium">Add Your Photo</p>
+          </div>
+        )}
       </div>
       <input
         type="file"
