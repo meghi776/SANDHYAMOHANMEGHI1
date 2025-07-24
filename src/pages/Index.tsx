@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
-import { Smartphone, Package, Coffee } from 'lucide-react'; // Import Coffee icon
+import { Smartphone, Package, Coffee, Gift } from 'lucide-react'; // Import Gift icon
 
 interface Category {
   id: string;
@@ -47,10 +47,11 @@ const Index = () => {
     fetchCategories();
   }, []);
 
-  const enabledCategories = ['mobile cover', 'customized mugs'];
+  const enabledCategories = ['mobile cover', 'customized mugs', 'customized chocolates'];
   const categoryIcons: { [key: string]: React.ElementType } = {
     'mobile cover': Smartphone,
     'customized mugs': Coffee,
+    'customized chocolates': Gift,
   };
 
   return (
@@ -96,7 +97,7 @@ const Index = () => {
                     ) : (
                       <Card className="h-full flex flex-col justify-between p-6 rounded-2xl border-transparent bg-gray-100 dark:bg-gray-800 shadow-md cursor-not-allowed opacity-70">
                         <CardHeader className="pb-4 flex flex-col items-center text-center">
-                          <Package className="h-12 w-12 text-gray-600 dark:text-gray-500 mb-3" />
+                          <Package className="h-12 w-12 text-gray-500 dark:text-gray-500 mb-3" />
                           <CardTitle className="text-2xl font-bold text-gray-700 dark:text-gray-200">{category.name}</CardTitle>
                         </CardHeader>
                         <CardContent className="text-center">
