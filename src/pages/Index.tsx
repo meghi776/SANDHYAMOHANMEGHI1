@@ -71,8 +71,8 @@ const Index = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl mx-auto animate-in fade-in-0 duration-500">
               {categories.map((category) => {
-                const isEnabled = enabledCategories.includes(category.name.toLowerCase());
-                const Icon = categoryIcons[category.name.toLowerCase()] || Package;
+                const isEnabled = enabledCategories.includes(category.name.toLowerCase().trim());
+                const Icon = categoryIcons[category.name.toLowerCase().trim()] || Package;
 
                 return (
                   <React.Fragment key={category.id}>
