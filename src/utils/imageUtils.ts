@@ -11,22 +11,19 @@ export const addTextToImage = (imageUrl: string, productName: string, orderDispl
         return reject(new Error('Could not get canvas context'));
       }
 
-      const fixedWidth = 1100;
-      const fixedHeight = 2100;
-      const whitespaceHeight = 100; // Increased height for order ID text below the image
-      const orderIdFontSize = 60; // Adjusted font size for better visibility on larger canvas
+      const whitespaceHeight = 60; // Increased height for larger text
+      const orderIdFontSize = 30; // Increased font size
 
-      // Set canvas dimensions to include the fixed image area plus whitespace for text
-      canvas.width = fixedWidth;
-      canvas.height = fixedHeight + whitespaceHeight;
+      // New canvas dimensions
+      canvas.width = img.width;
+      canvas.height = img.height + whitespaceHeight;
 
-      // Fill background with white
+      // White background
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw the original image onto the fixed area of the canvas
-      // It will be scaled to fit 1100x2100
-      ctx.drawImage(img, 0, 0, fixedWidth, fixedHeight);
+      // Original image
+      ctx.drawImage(img, 0, 0);
 
       // Common text properties
       ctx.fillStyle = 'black';
@@ -37,7 +34,7 @@ export const addTextToImage = (imageUrl: string, productName: string, orderDispl
       ctx.save(); // Save the current canvas state
       ctx.font = `900 ${orderIdFontSize}px Arial`; // Set font to extra-bold
       const orderIdX = canvas.width / 2;
-      const orderIdY = fixedHeight + (whitespaceHeight / 2); // Position below the image
+      const orderIdY = img.height + (whitespaceHeight / 2); // Center vertically
 
       // Translate to the center of where the text will be, then flip horizontally
       ctx.translate(orderIdX, orderIdY);

@@ -5,7 +5,21 @@ import { ArrowLeft, Trash2, User, LogIn, Eye } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { showError } from '@/utils/toast';
 import { useDemoOrderModal } from '@/contexts/DemoOrderModalContext';
-import { DesignElement } from '@/hooks/useCustomizerState'; // Import DesignElement
+
+interface DesignElement {
+  id: string;
+  type: 'text' | 'image';
+  value: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize?: number;
+  color?: string;
+  fontFamily?: string;
+  textShadow?: boolean;
+  rotation?: number;
+}
 
 interface DesignerPageHeaderProps {
   title: string;
@@ -73,7 +87,7 @@ const DesignerPageHeader: React.FC<DesignerPageHeaderProps> = ({ title, selected
   };
 
   return (
-    <div className="fixed top-0 w-full z-50 h-14 flex items-center justify-between py-2 px-4 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <div className="fixed top-0 w-full z-50 bg-white dark:bg-gray-800 shadow-sm py-6 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
       <Button variant="ghost" size="icon" onClick={handleBackClick} className="mr-4 flex-shrink-0">
         <ArrowLeft className="h-5 w-5" />
       </Button>

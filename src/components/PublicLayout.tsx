@@ -5,9 +5,9 @@ import Footer from './Footer'; // Import the new Footer
 
 const PublicLayout = () => {
   return (
-    <div className="flex flex-col h-screen"> {/* Changed min-h-screen to h-screen and added flex-col */}
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-grow pt-1 overflow-y-auto"> {/* Added overflow-y-auto */}
+      <main className="flex-grow pt-1">
         <Outlet />
       </main>
       <Footer /> {/* Add the Footer here */}
