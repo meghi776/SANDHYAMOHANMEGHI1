@@ -24,6 +24,8 @@ import ImportMobileProductsButton from '@/components/admin/ImportMobileProductsB
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from '@/hooks/use-mobile';
+import ProductCard from '@/components/admin/ProductCard';
 
 interface Product {
   id: string;
@@ -58,6 +60,7 @@ const AllProductsManagementPage = () => {
   const { user, session } = useSession();
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const [isUpdatingAll, setIsUpdatingAll] = useState(false);
+  const isMobile = useIsMobile();
 
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [bulkEditFields, setBulkEditFields] = useState({
@@ -663,6 +666,20 @@ const AllProductsManagementPage = () => {
             <>
               {products.length === 0 ? (
                 <p className="text-gray-600 dark:text-gray-300">No products found. Add one to get started!</p>
+              ) : isMobile ? (
+                <div className="space-y-4">
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isSelected={selectedProductIds.has(product.id)}
+                      onSelectProduct={handleSelectProduct}
+                      onToggleDisable={handleToggleDisable}
+                      onDeleteProduct={handleDeleteProduct}
+                      showCategoryBrand={true}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
