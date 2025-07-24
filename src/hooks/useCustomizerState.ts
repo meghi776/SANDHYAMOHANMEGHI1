@@ -730,6 +730,37 @@ export const useCustomizerState = () => {
       mockupImageElement.style.display = 'none';
     }
 
+    // Store original styles
+    const originalCanvasWidth = canvasContentRef.current.style.width;
+    const originalCanvasHeight = canvasContentRef.current.style.height;
+    const originalScaleFactor = scaleFactor;
+
+    // Temporarily set canvas dimensions to product's actual dimensions for capture
+    canvasContentRef.current.style.width = `${product.canvas_width}px`;
+    canvasContentRef.current.style.height = `${product.canvas_height}px`;
+    setScaleFactor(1); // Temporarily set scale factor to 1 for capture
+
+    // Re-apply element positions and sizes based on the new temporary scale (which is 1)
+    // This is crucial for html2canvas to render elements at their true unscaled positions
+    designElements.forEach(el => {
+      const elementDiv = canvasContentRef.current?.querySelector(`[data-element-id="${el.id}"]`) as HTMLElement;
+      if (elementDiv) {
+        elementDiv.style.left = `${el.x}px`;
+        elementDiv.style.top = `${el.y}px`;
+        elementDiv.style.width = `${el.width}px`;
+        if (el.type === 'image') {
+          elementDiv.style.height = `${el.height}px`;
+        }
+        if (el.type === 'text' && el.fontSize) {
+          const textContentDiv = elementDiv.querySelector('div');
+          if (textContentDiv) {
+            textContentDiv.style.fontSize = `${el.fontSize}px`;
+          }
+        }
+      }
+    });
+
+
     try {
       // Pre-load all images to ensure they are in cache for html2canvas
       const allImagesToLoad = designElements.filter(el => el.type === 'image').map(el => el.value);
@@ -782,6 +813,32 @@ export const useCustomizerState = () => {
       console.error("captureDesignForOrder: Detailed Error during capture process:", err);
       return null;
     } finally {
+      // Restore original styles and scale factor
+      if (canvasContentRef.current) {
+        canvasContentRef.current.style.width = originalCanvasWidth;
+        canvasContentRef.current.style.height = originalCanvasHeight;
+      }
+      setScaleFactor(originalScaleFactor);
+
+      // Restore element positions and sizes based on original scale factor
+      designElements.forEach(el => {
+        const elementDiv = canvasContentRef.current?.querySelector(`[data-element-id="${el.id}"]`) as HTMLElement;
+        if (elementDiv) {
+          elementDiv.style.left = `${el.x * originalScaleFactor}px`;
+          elementDiv.style.top = `${el.y * originalScaleFactor}px`;
+          elementDiv.style.width = `${el.width * originalScaleFactor}px`;
+          if (el.type === 'image') {
+            elementDiv.style.height = `${el.height * originalScaleFactor}px`;
+          }
+          if (el.type === 'text' && el.fontSize) {
+            const textContentDiv = elementDiv.querySelector('div');
+            if (textContentDiv) {
+              textContentDiv.style.fontSize = `${el.fontSize * originalScaleFactor}px`;
+            }
+          }
+        }
+      });
+
       // Restore elements
       if (mockupImageElement instanceof HTMLElement) {
         mockupImageElement.style.display = originalMockupDisplay;
@@ -794,7 +851,7 @@ export const useCustomizerState = () => {
       });
       console.log("captureDesignForOrder: Cleanup complete.");
     }
-  }, [product, selectedElementId, designElements, mockupOverlayData]);
+  }, [product, selectedElementId, designElements, mockupOverlayData, scaleFactor]);
 
   const handlePlaceOrder = useCallback(async (
     isDemo: boolean,
