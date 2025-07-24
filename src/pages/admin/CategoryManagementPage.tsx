@@ -179,17 +179,9 @@ const CategoryManagementPage = () => {
                       {categories.map((category) => (
                         <TableRow key={category.id}>
                           <TableCell className="font-medium">
-                            {/* Link to BrandManagementPage for 'Mobile Cover' category */}
-                            {category.name.toLowerCase() === 'mobile cover' ? (
-                              <Link to={`/admin/categories/${category.id}/brands`} className="text-blue-600 hover:underline">
-                                {category.name}
-                              </Link>
-                            ) : (
-                              // For other categories, link to ProductManagementByBrandPage (even if it's empty for now)
-                              <Link to={`/admin/categories/${category.id}/products`} className="text-blue-600 hover:underline">
-                                {category.name}
-                              </Link>
-                            )}
+                            <Link to={`/admin/categories/${category.id}/brands`} className="text-blue-600 hover:underline">
+                              {category.name}
+                            </Link>
                           </TableCell>
                           <TableCell>{category.description || 'N/A'}</TableCell>
                           <TableCell>{category.sort_order ?? 'N/A'}</TableCell> {/* Display sort_order */}
