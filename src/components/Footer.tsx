@@ -10,7 +10,7 @@ const Footer = () => {
           <p className="text-xxs">&copy; {new Date().getFullYear()} All rights reserved.</p>
         </div>
         <nav className="flex flex-wrap justify-center md:justify-end space-x-4 text-sm">
-          {/* Removed navigation links as requested */}
+          <Link to="/cancellation-refund" className="hover:underline">Return Policy</Link>
         </nav>
       </div>
     </footer>
