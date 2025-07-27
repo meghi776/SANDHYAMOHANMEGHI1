@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Home, Users, Package, ShoppingCart, LogOut, ExternalLink, Boxes, ListChecks, ClipboardList, Truck, CheckCircle } from 'lucide-react'; // Removed CreditCard and QrCode icons
+import { Home, Users, Package, ShoppingCart, LogOut, ExternalLink, Boxes, ListChecks, ClipboardList, Truck, CheckCircle, Undo2 } from 'lucide-react'; // Added Undo2 icon
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,7 +21,7 @@ const AdminLayout = () => {
     { name: 'Shipped Orders', href: '/admin/shipped-orders', icon: Truck }, // New item for Shipped Orders
     { name: 'Delivered Orders', href: '/admin/delivered-orders', icon: CheckCircle }, // New item for Delivered Orders
     { name: 'Demo Orders', href: '/admin/demo-orders', icon: ShoppingCart },
-    // Removed Payment Gateways and QR Codes nav items
+    { name: 'Returns', href: '/admin/returns', icon: Undo2 }, // New item for Returns
   ];
 
   const handleLogout = async () => {

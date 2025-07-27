@@ -34,6 +34,7 @@ import CancellationRefundPage from "./pages/CancellationRefundPage";
 import ShippingDeliveryPage from "./pages/ShippingDeliveryPage";
 import ContactUsPage from "./pages/ContactUsPage";
 import MobileSignUp from "./pages/MobileSignUp";
+import ReturnsPage from "./pages/admin/ReturnsPage";
 
 function App() {
   return (
@@ -99,6 +100,7 @@ function AppContent() {
             <Route path="all-processing-orders" element={<AllProcessingOrdersPage />} />
             <Route path="shipped-orders" element={<ShippedOrdersPage />} />
             <Route path="delivered-orders" element={<DeliveredOrdersPage />} />
+            <Route path="returns" element={<ReturnsPage />} />
           </Route>
 
           {/* Catch-all route for 404 */}
