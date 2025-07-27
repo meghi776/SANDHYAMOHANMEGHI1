@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log(`Edge Function: place-order-and-decrement-inventory invoked. Method: ${req.method}`); // Added log
+  console.log(`Edge Function: place-order-and-decrement-inventory invoked. Method: ${req.method}`);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -33,7 +33,7 @@ serve(async (req) => {
     customer_name,
     customer_address,
     customer_phone,
-    alternative_phone, // New field
+    alternative_phone,
     payment_method,
     status,
     total_price,
@@ -57,7 +57,6 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Validate required fields
     if (!product_id || !customer_name || !customer_address || !customer_phone || !payment_method || !status || typeof total_price !== 'number' || total_price <= 0 || !ordered_design_image_url || !type) {
       return new Response(JSON.stringify({ error: 'Missing or invalid required order fields.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -65,9 +64,8 @@ serve(async (req) => {
       });
     }
 
-    // Only decrement inventory for 'normal' orders
     if (type === 'normal') {
-      // Fetch the product to get its SKU
+      console.log(`Edge Function: Decrementing inventory for product_id: ${product_id}`);
       const { data: product, error: fetchProductError } = await supabaseAdmin
         .from('products')
         .select('sku, inventory')
@@ -83,14 +81,15 @@ serve(async (req) => {
       }
 
       if ((product.inventory || 0) < 1) {
+        console.warn(`Edge Function: Not enough stock for product_id: ${product_id}. Inventory: ${product.inventory}`);
         return new Response(JSON.stringify({ error: 'Not enough stock available.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 409, // Conflict
+          status: 409,
         });
       }
 
-      // Use RPC function for atomic inventory decrement if SKU exists
-      if (product.sku) {
+      if (product.sku && product.sku.trim() !== '') {
+        console.log(`Edge Function: Product has SKU [${product.sku}]. Using RPC to decrement inventory.`);
         const { error: rpcError } = await supabaseAdmin
           .rpc('decrement_inventory_by_sku', {
             p_sku: product.sku,
@@ -102,13 +101,14 @@ serve(async (req) => {
           if (rpcError.message.includes('Not enough stock')) {
             return new Response(JSON.stringify({ error: 'Not enough stock available for this SKU.' }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 409, // Conflict
+              status: 409,
             });
           }
           throw new Error(`Failed to update inventory via RPC: ${rpcError.message}`);
         }
+        console.log(`Edge Function: Inventory decremented successfully for SKU [${product.sku}].`);
       } else {
-        // Fallback for products without SKU: direct update (less atomic)
+        console.log(`Edge Function: Product has no SKU. Decrementing inventory for single product.`);
         const newInventory = (product.inventory || 0) - 1;
         const { error: updateError } = await supabaseAdmin
           .from('products')
@@ -116,26 +116,27 @@ serve(async (req) => {
           .eq('id', product_id);
 
         if (updateError) {
+          console.error("Edge Function: Error updating single product inventory:", updateError);
           throw new Error(`Failed to update inventory for single product: ${updateError.message}`);
         }
+        console.log(`Edge Function: Inventory decremented successfully for product_id [${product_id}].`);
       }
     }
 
-    // Insert order into the database
     const { data: orderData, error: orderInsertError } = await supabaseAdmin
       .from('orders')
       .insert({
-        user_id: user_id, // Will be null for guest users
+        user_id: user_id,
         product_id: product_id,
         customer_name: customer_name,
         customer_address: customer_address,
         customer_phone: customer_phone,
-        alternative_phone: alternative_phone || null, // Store new field
+        alternative_phone: alternative_phone || null,
         payment_method: payment_method,
         status: status,
         total_price: total_price,
         ordered_design_image_url: ordered_design_image_url,
-        ordered_design_data: ordered_design_data, // JSONB column, pass as is
+        ordered_design_data: ordered_design_data,
         type: type,
         payment_id: payment_id || null,
       })

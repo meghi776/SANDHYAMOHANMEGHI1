@@ -63,24 +63,17 @@ serve(async (req) => {
       });
     }
 
-    // --- Guest User Registration/Lookup Logic ---
     const guestPhone = `+91${customer_phone}`;
-    const guestEmail = `guest_${customer_phone}@meghi.com`; // Fallback email
+    const guestEmail = `guest_${customer_phone}@meghi.com`;
     let userId: string | null = null;
-
-    // We cannot directly query for a user by phone number via the admin API.
-    // The strategy is to attempt creation. If it fails due to the phone number
-    // already existing, we inform the client that they need to log in.
-    // This prevents creating duplicate accounts or overwriting existing ones.
-
-    const password = customer_phone; // Password is the phone number
+    const password = customer_phone;
 
     const { data: newUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       phone: guestPhone,
-      password: password, // Use the phone number as the password
-      email: guestEmail, // Provide a unique email to avoid conflicts if phone is not unique across users
+      password: password,
+      email: guestEmail,
       phone_confirm: true,
-      email_confirm: true, // Auto-confirm email as it's a dummy one
+      email_confirm: true,
       user_metadata: {
         first_name: customer_name.split(' ')[0] || 'Guest',
         last_name: customer_name.split(' ').slice(1).join(' ') || '',
@@ -89,25 +82,21 @@ serve(async (req) => {
     });
 
     if (createUserError) {
-      // Check for the specific error message for duplicate phone number
       if (createUserError.message.includes('phone number already exists') || createUserError.message.includes('duplicate key value violates unique constraint "users_phone_key"')) {
-        // Since we cannot get the user ID securely, we must ask the user to log in.
         return new Response(JSON.stringify({ error: 'A user with this phone number already exists. Please log in to place your order.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 409, // Conflict
+          status: 409,
         });
       }
-      // For other errors, re-throw to be caught by the generic error handler
       console.error("Edge Function: Error creating guest user:", createUserError);
       throw new Error(`Failed to create guest account: ${createUserError.message}`);
     }
     
     userId = newUser.user.id;
     console.log(`Edge Function: Created new guest user with phone number: ${userId}`);
-    // --- End Guest User Registration/Lookup Logic ---
 
-    // Only decrement inventory for 'normal' orders
     if (type === 'normal') {
+      console.log(`Edge Function: Decrementing inventory for product_id: ${product_id}`);
       const { data: product, error: fetchProductError } = await supabaseAdmin
         .from('products')
         .select('sku, inventory')
@@ -123,13 +112,15 @@ serve(async (req) => {
       }
 
       if ((product.inventory || 0) < 1) {
+        console.warn(`Edge Function: Not enough stock for product_id: ${product_id}. Inventory: ${product.inventory}`);
         return new Response(JSON.stringify({ error: 'Not enough stock available.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 409,
         });
       }
 
-      if (product.sku) {
+      if (product.sku && product.sku.trim() !== '') {
+        console.log(`Edge Function: Product has SKU [${product.sku}]. Using RPC to decrement inventory.`);
         const { error: rpcError } = await supabaseAdmin
           .rpc('decrement_inventory_by_sku', {
             p_sku: product.sku,
@@ -146,7 +137,9 @@ serve(async (req) => {
           }
           throw new Error(`Failed to update inventory via RPC: ${rpcError.message}`);
         }
+        console.log(`Edge Function: Inventory decremented successfully for SKU [${product.sku}].`);
       } else {
+        console.log(`Edge Function: Product has no SKU. Decrementing inventory for single product.`);
         const newInventory = (product.inventory || 0) - 1;
         const { error: updateError } = await supabaseAdmin
           .from('products')
@@ -154,12 +147,13 @@ serve(async (req) => {
           .eq('id', product_id);
 
         if (updateError) {
+          console.error("Edge Function: Error updating single product inventory:", updateError);
           throw new Error(`Failed to update inventory for single product: ${updateError.message}`);
         }
+        console.log(`Edge Function: Inventory decremented successfully for product_id [${product_id}].`);
       }
     }
 
-    // Insert order into the database, using the obtained userId
     const { data: orderData, error: orderInsertError } = await supabaseAdmin
       .from('orders')
       .insert({
