@@ -102,8 +102,8 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ isOpen, onOpenC
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone-number" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="phone-number">
                 Phone Number
               </Label>
               <Input
@@ -111,12 +111,11 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ isOpen, onOpenC
                 type="tel"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                className="col-span-3"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="video-upload" className="text-right">
+            <div className="space-y-2">
+              <Label htmlFor="video-upload">
                 Video
               </Label>
               <Input
@@ -124,20 +123,18 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ isOpen, onOpenC
                 type="file"
                 accept="video/*"
                 onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)}
-                className="col-span-3"
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="screenshot-upload" className="text-right">
-                Screenshot
+            <div className="space-y-2">
+              <Label htmlFor="screenshot-upload">
+                About Screenshot
               </Label>
               <Input
                 id="screenshot-upload"
                 type="file"
                 accept="image/*"
                 onChange={(e) => setScreenshotFile(e.target.files ? e.target.files[0] : null)}
-                className="col-span-3"
                 required
               />
             </div>
