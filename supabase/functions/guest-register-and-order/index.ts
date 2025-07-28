@@ -95,63 +95,62 @@ serve(async (req) => {
     userId = newUser.user.id;
     console.log(`Edge Function: Created new guest user with phone number: ${userId}`);
 
-    if (type === 'normal') {
-      console.log(`Edge Function: Decrementing inventory for product_id: ${product_id}`);
-      const { data: product, error: fetchProductError } = await supabaseAdmin
-        .from('products')
-        .select('sku, inventory')
-        .eq('id', product_id)
-        .single();
+    // Always decrement inventory for both 'normal' and 'demo' orders
+    console.log(`Edge Function: Decrementing inventory for product_id: ${product_id} (type: ${type})`);
+    const { data: product, error: fetchProductError } = await supabaseAdmin
+      .from('products')
+      .select('sku, inventory')
+      .eq('id', product_id)
+      .single();
 
-      if (fetchProductError || !product) {
-        console.error("Edge Function: Error fetching product for inventory decrement:", fetchProductError);
-        return new Response(JSON.stringify({ error: 'Product not found or error fetching details.' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 404,
+    if (fetchProductError || !product) {
+      console.error("Edge Function: Error fetching product for inventory decrement:", fetchProductError);
+      return new Response(JSON.stringify({ error: 'Product not found or error fetching details.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404,
+      });
+    }
+
+    if ((product.inventory || 0) < 1) {
+      console.warn(`Edge Function: Not enough stock for product_id: ${product_id}. Inventory: ${product.inventory}`);
+      return new Response(JSON.stringify({ error: 'Not enough stock available.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 409,
+      });
+    }
+
+    if (product.sku && product.sku.trim() !== '') {
+      console.log(`Edge Function: Product has SKU [${product.sku}]. Using RPC to decrement inventory.`);
+      const { error: rpcError } = await supabaseAdmin
+        .rpc('decrement_inventory_by_sku', {
+          p_sku: product.sku,
+          p_quantity: 1
         });
-      }
 
-      if ((product.inventory || 0) < 1) {
-        console.warn(`Edge Function: Not enough stock for product_id: ${product_id}. Inventory: ${product.inventory}`);
-        return new Response(JSON.stringify({ error: 'Not enough stock available.' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 409,
-        });
-      }
-
-      if (product.sku && product.sku.trim() !== '') {
-        console.log(`Edge Function: Product has SKU [${product.sku}]. Using RPC to decrement inventory.`);
-        const { error: rpcError } = await supabaseAdmin
-          .rpc('decrement_inventory_by_sku', {
-            p_sku: product.sku,
-            p_quantity: 1
+      if (rpcError) {
+        console.error("Edge Function: RPC Error during inventory decrement:", rpcError);
+        if (rpcError.message.includes('Not enough stock')) {
+          return new Response(JSON.stringify({ error: 'Not enough stock available for this SKU.' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409,
           });
-
-        if (rpcError) {
-          console.error("Edge Function: RPC Error during inventory decrement:", rpcError);
-          if (rpcError.message.includes('Not enough stock')) {
-            return new Response(JSON.stringify({ error: 'Not enough stock available for this SKU.' }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 409,
-            });
-          }
-          throw new Error(`Failed to update inventory via RPC: ${rpcError.message}`);
         }
-        console.log(`Edge Function: Inventory decremented successfully for SKU [${product.sku}].`);
-      } else {
-        console.log(`Edge Function: Product has no SKU. Decrementing inventory for single product.`);
-        const newInventory = (product.inventory || 0) - 1;
-        const { error: updateError } = await supabaseAdmin
-          .from('products')
-          .update({ inventory: newInventory })
-          .eq('id', product_id);
-
-        if (updateError) {
-          console.error("Edge Function: Error updating single product inventory:", updateError);
-          throw new Error(`Failed to update inventory for single product: ${updateError.message}`);
-        }
-        console.log(`Edge Function: Inventory decremented successfully for product_id [${product_id}].`);
+        throw new Error(`Failed to update inventory via RPC: ${rpcError.message}`);
       }
+      console.log(`Edge Function: Inventory decremented successfully for SKU [${product.sku}].`);
+    } else {
+      console.log(`Edge Function: Product has no SKU. Decrementing inventory for single product.`);
+      const newInventory = (product.inventory || 0) - 1;
+      const { error: updateError } = await supabaseAdmin
+        .from('products')
+        .update({ inventory: newInventory })
+        .eq('id', product_id);
+
+      if (updateError) {
+        console.error("Edge Function: Error updating single product inventory:", updateError);
+        throw new Error(`Failed to update inventory for single product: ${updateError.message}`);
+      }
+      console.log(`Edge Function: Inventory decremented successfully for product_id [${product_id}].`);
     }
 
     const { data: orderData, error: orderInsertError } = await supabaseAdmin
