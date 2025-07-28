@@ -1049,6 +1049,7 @@ const OrderManagementPage = () => {
                 value={editCustomerAddress}
                 onChange={(e) => setEditCustomerAddress(e.target.value)}
                 className="col-span-3"
+                rows={4}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">

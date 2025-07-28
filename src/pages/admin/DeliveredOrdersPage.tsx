@@ -678,7 +678,7 @@ const DeliveredOrdersPage = () => {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="customer-address" className="text-right">Address</Label>
-              <Textarea id="customer-address" value={editCustomerAddress} onChange={(e) => setEditCustomerAddress(e.target.value)} className="col-span-3" />
+              <Textarea id="customer-address" value={editCustomerAddress} onChange={(e) => setEditCustomerAddress(e.target.value)} className="col-span-3" rows={4} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="customer-phone" className="text-right">Phone</Label>
