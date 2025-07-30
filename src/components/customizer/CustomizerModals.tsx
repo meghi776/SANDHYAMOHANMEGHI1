@@ -116,7 +116,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   const pincodeTimeoutRef = React.useRef<number | null>(null);
 
   const basePrice = product?.price ?? 0;
-  const codCharge = 60;
+  const codCharge = 80;
   const totalPrice = paymentMethod === 'COD' ? basePrice + codCharge : basePrice;
 
 
