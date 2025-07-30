@@ -117,7 +117,7 @@ const ProductCustomizerPage = () => {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Razorpay');
+  const [paymentMethod, setPaymentMethod] = useState('Prepaid');
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   const [mockupOverlayData, setMockupOverlayData] = useState<MockupData | null>(null);
@@ -853,7 +853,13 @@ const ProductCustomizerPage = () => {
     const finalAlternativePhone = isDemo ? null : customerDetails.alternativePhone;
     const finalPaymentMethod = isDemo ? 'Demo' : paymentMethod;
     const finalStatus = isDemo ? 'Demo' : (paymentMethod === 'Prepaid' ? 'Processing' : 'Pending');
-    const finalTotalPrice = isDemo ? parseFloat(demoOrderPrice) : product.price;
+    
+    const codCharge = 60;
+    const basePrice = isDemo ? parseFloat(demoOrderPrice) : (product?.price ?? 0);
+    const finalTotalPrice = (!isDemo && paymentMethod === 'COD') 
+      ? basePrice + codCharge 
+      : basePrice;
+
     const finalOrderType = isDemo ? 'demo' : 'normal';
 
     if (!finalCustomerName.trim() || !finalCustomerAddress.trim() || !finalCustomerPhone.trim()) {
@@ -983,7 +989,7 @@ const ProductCustomizerPage = () => {
     } finally {
       setIsPlacingOrder(false);
     }
-  }, [product, user, session, customerName, customerPhone, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
+  }, [product, user, session, paymentMethod, demoCustomerName, demoOrderPrice, demoOrderAddress, designElements, navigate, setIsDemoOrderModalOpen]);
 
   const handleBlurBackground = useCallback((sourceImageUrl?: string) => {
     const imageToBlur = sourceImageUrl 

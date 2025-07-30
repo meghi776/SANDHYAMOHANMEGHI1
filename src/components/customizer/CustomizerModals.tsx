@@ -115,6 +115,10 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   const [isPincodeValid, setIsPincodeValid] = useState(false); // New state for pincode validity
   const pincodeTimeoutRef = React.useRef<number | null>(null);
 
+  const basePrice = product?.price ?? 0;
+  const codCharge = 60;
+  const totalPrice = paymentMethod === 'COD' ? basePrice + codCharge : basePrice;
+
 
   // Load Razorpay script dynamically
   useEffect(() => {
@@ -432,10 +436,10 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
               <div className="flex space-x-2">
                 <Button
                   type="button"
-                  variant={paymentMethod === 'Razorpay' ? 'default' : 'outline'}
+                  variant={paymentMethod === 'Prepaid' ? 'default' : 'outline'}
                   onClick={() => {
-                    setPaymentMethod('Razorpay');
-                    console.log("CustomizerModals: Payment method set to Razorpay.");
+                    setPaymentMethod('Prepaid');
+                    console.log("CustomizerModals: Payment method set to Prepaid.");
                   }}
                   className="flex-1"
                   disabled={isRazorpayLoading}
@@ -457,9 +461,14 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
               </div>
             </div>
             {product && (
-              <div className="space-y-2 col-span-1 md:col-span-2"> {/* Span two columns for total price */}
+              <div className="space-y-2 col-span-1 md:col-span-2">
                 <Label className="font-bold">Total Price</Label>
-                <span className="text-lg font-bold block">₹{(product.price ?? 0).toFixed(2)}</span>
+                <span className="text-lg font-bold block">₹{totalPrice.toFixed(2)}</span>
+                {paymentMethod === 'COD' && (
+                  <p className="text-xs text-muted-foreground">
+                    (Product: ₹{basePrice.toFixed(2)} + COD Charges: ₹{codCharge.toFixed(2)})
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -470,7 +479,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
                 console.log("CustomizerModals: Final checkout button clicked. Current paymentMethod state:", paymentMethod);
                 if (paymentMethod === 'COD') {
                   handleCODPlaceOrder();
-                } else if (paymentMethod === 'Razorpay') {
+                } else if (paymentMethod === 'Prepaid') {
                   handleRazorpayPayment();
                 } else {
                   showError("Please select a payment method.");
