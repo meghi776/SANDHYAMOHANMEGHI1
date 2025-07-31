@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Edit, Trash2, Upload, Download, Search, ListChecks, MoveVertical } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Upload, Download, Search, ListChecks, MoveVertical, Copy } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import Papa from 'papaparse';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -57,6 +57,7 @@ const AllProductsManagementPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const debounceTimeoutRef = useRef<number | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const navigate = useNavigate();
   const { user, session } = useSession();
   const importFileInputRef = useRef<HTMLInputElement>(null);
   const [isUpdatingAll, setIsUpdatingAll] = useState(false);
@@ -148,7 +149,7 @@ const AllProductsManagementPage = () => {
     };
   }, [searchQuery]);
 
-  const handleDeleteProduct = async (id: string) => {
+  const handleDeleteProduct = async (product: Product) => {
     if (!window.confirm("Are you sure you want to disable this product? It will be hidden from customers but preserved for existing orders.")) {
       return;
     }
@@ -158,7 +159,7 @@ const AllProductsManagementPage = () => {
     const { error } = await supabase
       .from('products')
       .update({ is_disabled: true })
-      .eq('id', id);
+      .eq('id', product.id);
 
     if (error) {
       console.error("Error disabling product:", error);
@@ -169,6 +170,18 @@ const AllProductsManagementPage = () => {
     }
     dismissToast(toastId);
     setLoading(false);
+  };
+
+  const handleDuplicateProduct = (product: Product) => {
+    const duplicatedProductData = {
+      ...product,
+      name: `${product.name} (Copy)`,
+      sku: product.sku ? `${product.sku}-copy` : null,
+    };
+    // @ts-ignore
+    delete duplicatedProductData.id;
+
+    navigate(`/admin/categories/${product.category_id}/brands/${product.brand_id}/products/new`, { state: { duplicatedProduct: duplicatedProductData } });
   };
 
   const handleToggleDisable = async (productId: string, currentStatus: boolean) => {
@@ -676,6 +689,7 @@ const AllProductsManagementPage = () => {
                       onSelectProduct={handleSelectProduct}
                       onToggleDisable={handleToggleDisable}
                       onDeleteProduct={handleDeleteProduct}
+                      onDuplicateProduct={handleDuplicateProduct}
                       showCategoryBrand={true}
                     />
                   ))}
@@ -755,9 +769,17 @@ const AllProductsManagementPage = () => {
                               </Button>
                             </Link>
                             <Button
+                              variant="outline"
+                              size="sm"
+                              className="mr-2"
+                              onClick={() => handleDuplicateProduct(product)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
                               variant="destructive"
                               size="sm"
-                              onClick={() => handleDeleteProduct(product.id)}
+                              onClick={() => handleDeleteProduct(product)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

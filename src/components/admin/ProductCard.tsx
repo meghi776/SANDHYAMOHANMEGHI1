@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Product {
@@ -26,7 +26,8 @@ interface ProductCardProps {
   isSelected: boolean;
   onSelectProduct: (productId: string, isChecked: boolean) => void;
   onToggleDisable: (productId: string, currentStatus: boolean) => void;
-  onDeleteProduct: (productId: string) => void;
+  onDeleteProduct: (product: Product) => void;
+  onDuplicateProduct: (product: Product) => void;
   showCategoryBrand?: boolean;
 }
 
@@ -36,6 +37,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onSelectProduct,
   onToggleDisable,
   onDeleteProduct,
+  onDuplicateProduct,
   showCategoryBrand = false,
 }) => {
   return (
@@ -85,9 +87,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </Button>
         </Link>
         <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onDuplicateProduct(product)}
+        >
+          <Copy className="h-4 w-4 mr-1" /> Duplicate
+        </Button>
+        <Button
           variant="destructive"
           size="sm"
-          onClick={() => onDeleteProduct(product.id)}
+          onClick={() => onDeleteProduct(product)}
         >
           <Trash2 className="h-4 w-4 mr-1" /> Disable
         </Button>

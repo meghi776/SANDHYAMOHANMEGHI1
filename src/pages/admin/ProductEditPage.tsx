@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ interface Product {
 const ProductEditPage = () => {
   const { categoryId, brandId, productId } = useParams<{ categoryId: string; brandId: string; productId?: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useSession();
 
   const [productName, setProductName] = useState('');
@@ -132,6 +133,29 @@ const ProductEditPage = () => {
   useEffect(() => {
     fetchProductsAndCurrent();
   }, [fetchProductsAndCurrent]);
+
+  useEffect(() => {
+    if (location.state?.duplicatedProduct && !isEditing) {
+      const duplicatedProduct = location.state.duplicatedProduct;
+      setProductName(duplicatedProduct.name);
+      setProductDescription(duplicatedProduct.description || '');
+      setProductPrice(duplicatedProduct.price?.toString() || '');
+      setCurrentMockupImageUrl(duplicatedProduct.mockup_image_url || null);
+      setCanvasWidth(duplicatedProduct.canvas_width?.toString() || '300');
+      setCanvasHeight(duplicatedProduct.canvas_height?.toString() || '600');
+      setIsProductDisabled(duplicatedProduct.is_disabled);
+      setProductInventory(duplicatedProduct.inventory?.toString() || '0');
+      setProductSku(duplicatedProduct.sku || '');
+      setMockupX(duplicatedProduct.mockup_x?.toString() || '0');
+      setMockupY(duplicatedProduct.mockup_y?.toString() || '0');
+      setMockupWidth(duplicatedProduct.mockup_width?.toString() || '');
+      setMockupHeight(duplicatedProduct.mockup_height?.toString() || '');
+      setMockupRotation(duplicatedProduct.mockup_rotation?.toString() || '0');
+
+      // Clear the state so it's not used on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, isEditing, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
