@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from "@/components/ui/button"; // Keep Button import
-import { ArrowLeft } from 'lucide-react'; // Keep ArrowLeft icon
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Tag } from 'lucide-react';
 
 interface Brand {
   id: string;
   name: string;
   description: string | null;
   category_id: string;
-  sort_order: number | null; // Added sort_order
+  sort_order: number | null;
+  image_url: string | null;
 }
 
 const BrandsPage = () => {
@@ -50,7 +52,7 @@ const BrandsPage = () => {
         // Fetch brands and order by sort_order, then by name
         const { data: brandsData, error: brandsError } = await supabase
           .from('brands')
-          .select('id, name, description, category_id, sort_order') // Select sort_order
+          .select('id, name, description, category_id, sort_order, image_url') // Select image_url
           .eq('category_id', categoryId)
           .order('sort_order', { ascending: true }) // Order by sort_order first
           .order('name', { ascending: true }); // Secondary order by name
@@ -79,13 +81,13 @@ const BrandsPage = () => {
     <div className="flex flex-col items-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-950">
       <div className="w-full max-w-4xl mx-auto">
         <div className="flex items-center mb-6">
-          <Link to="/" className="mr-4 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200">
+          <Link to="/" className="mr-4">
             <Button variant="outline" size="icon">
-              <ArrowLeft size={24} />
+              <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50">
-            Brands in {categoryName}
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+            Brands for {categoryName || 'Category'}
           </h1>
         </div>
 
@@ -102,16 +104,25 @@ const BrandsPage = () => {
             {brands.length === 0 ? (
               <p className="text-gray-600 dark:text-gray-300">No brands found for this category. Please add some from the admin panel.</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                 {brands.map((brand) => (
-                  <Link
-                    key={brand.id}
-                    to={`/categories/${categoryId}/brands/${brand.id}/products`}
-                    className="block"
-                  >
-                    <Button className="w-full h-auto py-4 px-6 text-lg font-semibold transition-colors duration-200 bg-white text-gray-800 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 rounded-md border border-input shadow-sm">
-                      {brand.name}
-                    </Button>
+                  <Link key={brand.id} to={`/categories/${categoryId}/brands/${brand.id}/products`}>
+                    <Card className="h-full flex flex-col justify-between p-6 bg-white dark:bg-gray-800 shadow-xl rounded-xl border-2 border-indigo-500 hover:border-indigo-700 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                      <CardHeader className="pb-4 flex flex-col items-center text-center">
+                        {brand.image_url ? (
+                          <img src={brand.image_url} alt={brand.name} className="w-24 h-24 object-cover rounded-full mb-3" />
+                        ) : (
+                          <Tag className="h-12 w-12 text-indigo-600 dark:text-indigo-400 mb-3" />
+                        )}
+                        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-50">{brand.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{brand.description || 'No description.'}</p>
+                        <span className="inline-block bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-md">
+                          View Products
+                        </span>
+                      </CardContent>
+                    </Card>
                   </Link>
                 ))}
               </div>
