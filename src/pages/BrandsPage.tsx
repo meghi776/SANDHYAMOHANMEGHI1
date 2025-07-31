@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Tag } from 'lucide-react';
 
 interface Brand {
@@ -33,7 +33,6 @@ const BrandsPage = () => {
       }
 
       try {
-        // Fetch category name
         const { data: categoryData, error: categoryError } = await supabase
           .from('categories')
           .select('name')
@@ -49,13 +48,12 @@ const BrandsPage = () => {
           setCategoryName('Unknown Category');
         }
 
-        // Fetch brands and order by sort_order, then by name
         const { data: brandsData, error: brandsError } = await supabase
           .from('brands')
-          .select('id, name, description, category_id, sort_order, image_url') // Select image_url
+          .select('id, name, description, category_id, sort_order, image_url')
           .eq('category_id', categoryId)
-          .order('sort_order', { ascending: true }) // Order by sort_order first
-          .order('name', { ascending: true }); // Secondary order by name
+          .order('sort_order', { ascending: true })
+          .order('name', { ascending: true });
 
         if (brandsError) {
           console.error("BrandsPage.tsx: Error fetching brands:", brandsError);
@@ -78,8 +76,8 @@ const BrandsPage = () => {
   }, [categoryId]);
 
   return (
-    <div className="flex flex-col items-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-950">
-      <div className="w-full max-w-4xl mx-auto">
+    <div className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="w-full max-w-6xl mx-auto">
         <div className="flex items-center mb-6">
           <Link to="/" className="mr-4">
             <Button variant="outline" size="icon">
@@ -87,53 +85,46 @@ const BrandsPage = () => {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-            Brands for {categoryName || 'Category'}
+            Select a Brand for {categoryName || '...'}
           </h1>
         </div>
 
         {loading && (
-          <p className="text-gray-600 dark:text-gray-300">Loading brands...</p>
+          <p className="text-gray-600 dark:text-gray-300 text-center">Loading brands...</p>
         )}
 
         {error && (
-          <p className="text-red-500">Error: {error}</p>
+          <p className="text-red-500 text-center">Error: {error}</p>
         )}
 
         {!loading && !error && (
           <>
             {brands.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-300">No brands found for this category. Please add some from the admin panel.</p>
+              <p className="text-gray-600 dark:text-gray-300 text-center">No brands found for this category.</p>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {brands.map((brand) => (
-                  <Link key={brand.id} to={`/categories/${categoryId}/brands/${brand.id}/products`}>
-                    <Card className="h-full flex flex-col justify-between p-6 bg-white dark:bg-gray-800 shadow-xl rounded-xl border-2 border-indigo-500 hover:border-indigo-700 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-                      <CardHeader className="pb-4 flex flex-col items-center text-center">
+                  <Link key={brand.id} to={`/categories/${categoryId}/brands/${brand.id}/products`} className="block group">
+                    <Card className="overflow-hidden transition-all duration-300 group-hover:shadow-xl group-hover:scale-105 border-border">
+                      <CardContent className="p-0 aspect-square flex items-center justify-center bg-white dark:bg-gray-800">
                         {brand.image_url ? (
-                          <img src={brand.image_url} alt={brand.name} className="w-24 h-24 object-cover rounded-full mb-3" />
+                          <img src={brand.image_url} alt={brand.name} className="w-full h-full object-contain p-2" />
                         ) : (
-                          <Tag className="h-12 w-12 text-indigo-600 dark:text-indigo-400 mb-3" />
+                          <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                            <Tag className="h-12 w-12 text-gray-400" />
+                          </div>
                         )}
-                        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-50">{brand.name}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{brand.description || 'No description.'}</p>
-                        <span className="inline-block bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-md">
-                          View Products
-                        </span>
                       </CardContent>
                     </Card>
+                    <div className="p-2 text-center">
+                      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate group-hover:text-primary">{brand.name}</h3>
+                    </div>
                   </Link>
                 ))}
               </div>
             )}
           </>
         )}
-      </div>
-      <div className="p-4 text-center mt-8">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          &copy; {new Date().getFullYear()} All rights reserved by Puppala Mohan
-        </p>
       </div>
     </div>
   );
