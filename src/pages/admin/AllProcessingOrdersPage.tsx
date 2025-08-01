@@ -605,6 +605,7 @@ const AllProcessingOrdersPage = () => {
                       <div className="flex items-center">Date {getSortIcon('created_at')}</div>
                     </TableHead>
                     <TableHead>Customer</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Design</TableHead>
                     <TableHead>Comment</TableHead>
@@ -622,6 +623,7 @@ const AllProcessingOrdersPage = () => {
                       <TableCell className="font-medium text-xs">{order.display_id || `${order.id.substring(0, 8)}...`}</TableCell>
                       <TableCell>{format(new Date(order.created_at), 'PPP')}</TableCell>
                       <TableCell>{order.customer_name}</TableCell>
+                      <TableCell>{order.customer_phone}</TableCell>
                       <TableCell>{order.products?.name || 'N/A'}</TableCell>
                       <TableCell>
                         {order.ordered_design_image_url ? (
