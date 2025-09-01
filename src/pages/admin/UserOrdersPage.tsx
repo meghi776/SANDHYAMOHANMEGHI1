@@ -22,8 +22,8 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
 import { addTextToImage } from '@/utils/imageUtils';
-import { Input } from '@/components/ui/input'; // Import Input
-import { Textarea } from '@/components/ui/textarea'; // Import Textarea
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import QuickCommentEditor from '@/components/admin/QuickCommentEditor';
 
 interface Order {
@@ -48,20 +48,20 @@ const UserOrdersPage = () => {
   const { userId } = useParams<{ userId: string }>();
   const [searchParams] = useSearchParams();
   const orderTypeParam = searchParams.get('type');
-  const statusParam = searchParams.get('status'); // Get status from URL
+  const statusParam = searchParams.get('status');
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
-  const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false); // Renamed state
+  const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
-  const [editStatus, setEditStatus] = useState<string>(''); // Renamed state
-  const [editCustomerName, setEditCustomerName] = useState(''); // New state
-  const [editCustomerAddress, setEditCustomerAddress] = useState(''); // New state
-  const [editCustomerPhone, setEditCustomerPhone] = useState(''); // New state
-  const [editPaymentMethod, setEditPaymentMethod] = useState(''); // New state
+  const [editStatus, setEditStatus] = useState<string>('');
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [editCustomerAddress, setEditCustomerAddress] = useState('');
+  const [editCustomerPhone, setEditCustomerPhone] = useState('');
+  const [editPaymentMethod, setEditPaymentMethod] = useState('');
   const [editComment, setEditComment] = useState('');
   const [userName, setUserName] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<string>('created_at');
@@ -71,7 +71,7 @@ const UserOrdersPage = () => {
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
 
   const orderStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Demo'];
-  const paymentMethods = ['COD', 'Demo']; // Updated payment methods
+  const paymentMethods = ['COD', 'Demo'];
 
   const fetchUserAndOrders = async () => {
     if (!userId) {
@@ -115,14 +115,13 @@ const UserOrdersPage = () => {
                    .neq('status', 'Shipped')
                    .neq('status', 'Delivered')
                    .neq('status', 'Cancelled');
-    } else { // orderTypeParam is null or 'normal'
-      if (orderTypeParam) { // If it's 'normal'
+    } else {
+      if (orderTypeParam) {
         query = query.eq('type', orderTypeParam);
       }
-      if (statusParam) { // Apply status filter for non-demo orders
+      if (statusParam) {
         query = query.eq('status', statusParam);
       } else {
-        // For general user orders, exclude processing, shipped, delivered by default
         query = query.neq('status', 'Processing').neq('status', 'Shipped').neq('status', 'Delivered');
       }
     }
@@ -141,7 +140,7 @@ const UserOrdersPage = () => {
 
   useEffect(() => {
     fetchUserAndOrders();
-  }, [userId, orderTypeParam, statusParam, sortColumn, sortDirection]); // Add statusParam to dependencies
+  }, [userId, orderTypeParam, statusParam, sortColumn, sortDirection]);
 
   const openImageModal = (imageUrl: string | null) => {
     if (imageUrl) {
@@ -150,7 +149,7 @@ const UserOrdersPage = () => {
     }
   };
 
-  const handleEditOrderClick = (order: Order) => { // Renamed function
+  const handleEditOrderClick = (order: Order) => {
     setCurrentOrder(order);
     setEditStatus(order.status);
     setEditCustomerName(order.customer_name);
@@ -158,10 +157,10 @@ const UserOrdersPage = () => {
     setEditCustomerPhone(order.customer_phone);
     setEditPaymentMethod(order.payment_method);
     setEditComment(order.comment || '');
-    setIsEditOrderModalOpen(true); // Renamed state
+    setIsEditOrderModalOpen(true);
   };
 
-  const handleSaveOrderEdit = async () => { // Renamed function
+  const handleSaveOrderEdit = async () => {
     if (!currentOrder || !editStatus || !editCustomerName.trim() || !editCustomerAddress.trim() || !editCustomerPhone.trim() || !editPaymentMethod.trim()) {
       showError("All fields are required.");
       return;
@@ -181,15 +180,15 @@ const UserOrdersPage = () => {
       })
       .eq('id', currentOrder.id);
 
+    dismissToast(toastId);
     if (error) {
       console.error("Error updating order status:", error);
       showError(`Failed to update order: ${error.message}`);
     } else {
       showSuccess("Order updated successfully!");
-      setIsEditOrderModalOpen(false); // Renamed state
+      setIsEditOrderModalOpen(false);
       fetchUserAndOrders();
     }
-    dismissToast(toastId);
     setLoading(false);
   };
 
@@ -263,6 +262,7 @@ const UserOrdersPage = () => {
     const toastId = showLoading(`Preparing ${selectedOrderIds.size} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
+    let failedCount = 0; // Track failed downloads
 
     const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
 
@@ -278,19 +278,27 @@ const UserOrdersPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
+          failedCount++; // Increment failed count
         }
+      } else {
+        failedCount++; // Increment if no image URL
       }
     });
 
     await Promise.all(downloadPromises);
 
     if (downloadedCount > 0) {
-      zip.generateAsync({ type: "blob" }).then(content => {
-        saveAs(content, `designs_${userId}.zip`);
-        showSuccess(`${downloadedCount} designs downloaded.`);
-      });
+      zip.generateAsync({ type: "blob" })
+        .then(function (content) {
+          saveAs(content, `designs_${userId}.zip`);
+          showSuccess(`${downloadedCount} designs downloaded.${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
+        })
+        .catch(err => {
+          console.error("Error generating zip file:", err);
+          showError("Error generating zip file for download.");
+        });
     } else {
-      showError("No designs could be downloaded.");
+      showError("No designs were successfully downloaded.");
     }
     dismissToast(toastId);
   };
@@ -304,6 +312,7 @@ const UserOrdersPage = () => {
     const toastId = showLoading(`Preparing all ${orders.length} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
+    let failedCount = 0; // Track failed downloads
 
     const downloadPromises = orders.map(async (order) => {
       if (order.ordered_design_image_url) {
@@ -316,7 +325,10 @@ const UserOrdersPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
+          failedCount++; // Increment failed count
         }
+      } else {
+        failedCount++; // Increment if no image URL
       }
     });
 
@@ -326,7 +338,7 @@ const UserOrdersPage = () => {
     if (downloadedCount > 0) {
       zip.generateAsync({ type: "blob" }).then(content => {
         saveAs(content, `all_user_${userId}_designs.zip`);
-        showSuccess(`${downloadedCount} designs downloaded.`);
+        showSuccess(`${downloadedCount} designs downloaded.${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
       });
     } else {
       showError("No designs could be downloaded.");
@@ -348,7 +360,7 @@ const UserOrdersPage = () => {
         'Customer Phone': order.customer_phone,
         'Product Name': order.products?.name || 'N/A',
         'Order Date': format(new Date(order.created_at), 'yyyy-MM-dd'),
-        'Order Total': order.total_price?.toFixed(2) || '0.00', // Added Order Total
+        'Order Total': order.total_price?.toFixed(2) || '0.00',
       }));
 
     const csv = Papa.unparse(dataToExport);
@@ -374,7 +386,7 @@ const UserOrdersPage = () => {
 
     try {
       const { data, error: invokeError } = await supabase.functions.invoke('bulk-update-order-status', {
-        body: JSON.stringify({ // Explicitly stringify
+        body: JSON.stringify({
           orderIds: Array.from(selectedOrderIds),
           newStatus: bulkNewStatus,
         }),
@@ -390,7 +402,7 @@ const UserOrdersPage = () => {
       showSuccess(`${data.updatedCount} orders updated successfully!`);
       setIsBulkStatusModalOpen(false);
       setBulkNewStatus('');
-      fetchUserAndOrders(); // Refresh the list
+      fetchUserAndOrders();
     } catch (err: any) {
       showError(`Failed to update orders: ${err.message}`);
     } finally {
@@ -553,7 +565,7 @@ const UserOrdersPage = () => {
                               variant="outline"
                               size="sm"
                               className="mr-2"
-                              onClick={() => handleEditOrderClick(order)} // Renamed function
+                              onClick={() => handleEditOrderClick(order)}
                             >
                               <Eye className="h-4 w-4" /> Edit
                             </Button>
@@ -591,10 +603,10 @@ const UserOrdersPage = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOrderModalOpen} onOpenChange={setIsEditOrderModalOpen}> {/* Renamed state */}
+      <Dialog open={isEditOrderModalOpen} onOpenChange={setIsEditOrderModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Order Details</DialogTitle> {/* Changed title */}
+            <DialogTitle>Edit Order Details</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">

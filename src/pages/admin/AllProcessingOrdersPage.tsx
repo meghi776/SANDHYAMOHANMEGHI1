@@ -70,9 +70,9 @@ const AllProcessingOrdersPage = () => {
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined); // New state for start date
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);     // New state for end date
-  const importFileInputRef = useRef<HTMLInputElement>(null); // Ref for import file input
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
 
   const orderStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Demo'];
   const paymentMethods = ['COD'];
@@ -148,7 +148,7 @@ const AllProcessingOrdersPage = () => {
     if (!sessionLoading) {
       fetchOrders();
     }
-  }, [sessionLoading, sortColumn, sortDirection, startDate, endDate]); // Add startDate and endDate to dependencies
+  }, [sessionLoading, sortColumn, sortDirection, startDate, endDate]);
 
   const openImageModal = (imageUrl: string | null) => {
     if (imageUrl) {
@@ -236,6 +236,7 @@ const AllProcessingOrdersPage = () => {
     const toastId = showLoading(`Preparing ${selectedOrderIds.size} designs...`);
     const zip = new JSZip();
     let downloadedCount = 0;
+    let failedCount = 0; // Track failed downloads
 
     const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
     const downloadPromises = selectedOrders.map(async (order) => {
@@ -249,7 +250,10 @@ const AllProcessingOrdersPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
+          failedCount++; // Increment failed count
         }
+      } else {
+        failedCount++; // Increment if no image URL
       }
     });
 
@@ -259,7 +263,7 @@ const AllProcessingOrdersPage = () => {
     if (downloadedCount > 0) {
       zip.generateAsync({ type: "blob" }).then(content => {
         saveAs(content, "processing_designs.zip");
-        showSuccess(`${downloadedCount} designs downloaded.`);
+        showSuccess(`${downloadedCount} designs downloaded.${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
       });
     } else {
       showError("No designs could be downloaded.");
@@ -275,6 +279,7 @@ const AllProcessingOrdersPage = () => {
     const toastId = showLoading(`Preparing all ${orders.length} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
+    let failedCount = 0; // Track failed downloads
 
     const downloadPromises = orders.map(async (order) => {
       if (order.ordered_design_image_url) {
@@ -287,7 +292,10 @@ const AllProcessingOrdersPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
+          failedCount++; // Increment failed count
         }
+      } else {
+        failedCount++; // Increment if no image URL
       }
     });
 
@@ -297,7 +305,7 @@ const AllProcessingOrdersPage = () => {
     if (downloadedCount > 0) {
       zip.generateAsync({ type: "blob" }).then(content => {
         saveAs(content, "all_processing_designs.zip");
-        showSuccess(`${downloadedCount} designs downloaded.`);
+        showSuccess(`${downloadedCount} designs downloaded.${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
       });
     } else {
       showError("No designs could be downloaded.");
@@ -319,7 +327,7 @@ const AllProcessingOrdersPage = () => {
         'Customer Phone': order.customer_phone,
         'Product Name': order.products?.name || 'N/A',
         'Order Date': format(new Date(order.created_at), 'yyyy-MM-dd'),
-        'Order Total': order.total_price?.toFixed(2) || '0.00', // Added Order Total
+        'Order Total': order.total_price?.toFixed(2) || '0.00',
       }));
 
     const csv = Papa.unparse(dataToExport);
@@ -344,7 +352,7 @@ const AllProcessingOrdersPage = () => {
       status: order.status,
       total_price: order.total_price || 0,
       ordered_design_image_url: order.ordered_design_image_url || '',
-      ordered_design_data: JSON.stringify(order.ordered_design_data), // Stringify JSONB
+      ordered_design_data: JSON.stringify(order.ordered_design_data),
       type: order.type,
       comment: order.comment || '',
     }));
@@ -391,7 +399,7 @@ const AllProcessingOrdersPage = () => {
         }
 
         const ordersToUpsert = results.data.map((row: any) => ({
-          id: row.id || undefined, // Allow new IDs to be generated
+          id: row.id || undefined,
           user_id: row.user_id,
           product_id: row.product_id || null,
           customer_name: row.customer_name,
@@ -401,7 +409,7 @@ const AllProcessingOrdersPage = () => {
           status: row.status,
           total_price: parseFloat(row.total_price),
           ordered_design_image_url: row.ordered_design_image_url || null,
-          ordered_design_data: row.ordered_design_data || null, // Keep as string, Edge Function will parse
+          ordered_design_data: row.ordered_design_data || null,
           type: row.type,
           display_id: row.display_id || null,
           comment: row.comment || null,
@@ -442,7 +450,7 @@ const AllProcessingOrdersPage = () => {
             } else {
               showSuccess(`Import complete! Successfully imported ${data.successfulUpserts} orders.`);
             }
-            fetchOrders(); // Refresh the list
+            fetchOrders();
           } else {
             showError("Unexpected response from server during order import.");
           }
@@ -510,7 +518,7 @@ const AllProcessingOrdersPage = () => {
       showSuccess(`${data.updatedCount} orders updated successfully!`);
       setIsBulkStatusModalOpen(false);
       setBulkNewStatus('');
-      fetchOrders(); // Refresh the list
+      fetchOrders();
     } catch (err: any) {
       showError(`Failed to update orders: ${err.message}`);
     } finally {
