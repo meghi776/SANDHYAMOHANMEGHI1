@@ -91,7 +91,13 @@ const AllProcessingOrdersPage = () => {
     }
 
     try {
+      const payload = {
+        startDate: startDate ? startDate.toISOString() : null,
+        endDate: endDate ? endDate.toISOString() : null,
+      };
+
       let query = supabase.functions.invoke('get-processing-orders', {
+        body: payload,
         headers: {
           'Authorization': `Bearer ${currentSession.access_token}`,
         },
@@ -105,16 +111,6 @@ const AllProcessingOrdersPage = () => {
 
       if (data && data.orders) {
         let filteredData = data.orders || [];
-
-        // Apply date range filter
-        if (startDate) {
-          filteredData = filteredData.filter((order: Order) => new Date(order.created_at) >= startDate);
-        }
-        if (endDate) {
-          const endOfDay = new Date(endDate);
-          endOfDay.setHours(23, 59, 59, 999);
-          filteredData = filteredData.filter((order: Order) => new Date(order.created_at) <= endOfDay);
-        }
 
         filteredData.sort((a: Order, b: Order) => {
           let valA: any = a[sortColumn as keyof Order];

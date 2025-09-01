@@ -12,6 +12,9 @@ serve(async (req) => {
   }
 
   try {
+    const payload = await req.json();
+    const { startDate, endDate } = payload;
+
     // 1. Create Admin Client and Authenticate
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -58,8 +61,19 @@ serve(async (req) => {
         payment_method, status, total_price, ordered_design_image_url,
         product_id, products (name), profiles (first_name, last_name, phone), user_id, type, comment
       `)
-      .eq('status', 'Processing')
-      .order('created_at', { ascending: false });
+      .eq('status', 'Processing');
+    
+    // Apply date range filter if provided
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+    if (endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setUTCHours(23, 59, 59, 999); // Ensure end date includes the whole day
+      query = query.lte('created_at', endOfDay.toISOString());
+    }
+
+    query = query.order('created_at', { ascending: false });
 
     // 4. Execute Query
     const { data: ordersData, error: ordersError } = await query;
