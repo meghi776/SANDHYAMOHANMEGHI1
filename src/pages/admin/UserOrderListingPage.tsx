@@ -170,7 +170,7 @@ const OrderManagementPage = () => {
               errorMessage = parsedError.error;
             }
           } catch (e) {
-            // Fallback if context.data is not JSON
+            // Fallback
           }
         }
         showError(`Failed to load orders: ${errorMessage}`);
@@ -414,7 +414,6 @@ const OrderManagementPage = () => {
     const toastId = showLoading(`Preparing ${selectedOrderIds.size} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
-    let failedCount = 0;
 
     const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
 
@@ -454,6 +453,45 @@ const OrderManagementPage = () => {
     }
     dismissToast(toastId);
     setLoading(false);
+  };
+
+  const handleDownloadAllDesigns = async () => {
+    if (orders.length === 0) {
+      showError("No orders to download designs from.");
+      return;
+    }
+
+    setLoading(true);
+    const toastId = showLoading(`Preparing all ${orders.length} designs for download...`);
+    const zip = new JSZip();
+    let downloadedCount = 0;
+
+    const downloadPromises = orders.map(async (order) => {
+      if (order.ordered_design_image_url) {
+        try {
+          const productName = order.products?.name || 'Unknown Product';
+          const orderDisplayId = order.display_id || order.id;
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          const fileName = `${orderDisplayId}.png`;
+          zip.file(fileName, blobWithText);
+          downloadedCount++;
+        } catch (err) {
+          console.error(`Failed to process design for order ${order.id}:`, err);
+        }
+      }
+    });
+
+    await Promise.all(downloadPromises);
+    dismissToast(toastId);
+
+    if (downloadedCount > 0) {
+      zip.generateAsync({ type: "blob" }).then(content => {
+        saveAs(content, "all_orders_designs.zip");
+        showSuccess(`${downloadedCount} designs downloaded.`);
+      });
+    } else {
+      showError("No designs could be downloaded.");
+    }
   };
 
   const handleBulkDownloadAddresses = () => {
@@ -778,6 +816,9 @@ const OrderManagementPage = () => {
                 </Button>
               </>
             )}
+            <Button onClick={handleDownloadAllDesigns} variant="outline" size="sm" disabled={orders.length === 0 || loading}>
+              <Download className="mr-2 h-4 w-4" /> Download All Designs
+            </Button>
             <Button onClick={handleExportAllOrders} variant="outline" size="sm">
               <Download className="mr-2 h-4 w-4" /> Export All CSV
             </Button>

@@ -17,7 +17,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Eye, Trash2, Image as ImageIcon, ArrowDownWideNarrow, ArrowUpWideNarrow, Download, ListChecks } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { useSession } from '@/contexts/SessionContext';
@@ -64,7 +63,7 @@ const DemoOrderListingPage = () => {
   const [editComment, setEditComment] = useState('');
   const [sortColumn, setSortColumn] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+  const [selectedOrderIds, setSelectedOrderIds] = new Set<string>();
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
 
@@ -338,7 +337,6 @@ const DemoOrderListingPage = () => {
     const toastId = showLoading(`Preparing ${selectedOrderIds.size} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
-    let failedCount = 0;
 
     const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
 
@@ -381,6 +379,45 @@ const DemoOrderListingPage = () => {
     setLoading(false);
   };
 
+  const handleDownloadAllDesigns = async () => {
+    if (orders.length === 0) {
+      showError("No orders to download designs from.");
+      return;
+    }
+
+    setLoading(true);
+    const toastId = showLoading(`Preparing all ${orders.length} designs for download...`);
+    const zip = new JSZip();
+    let downloadedCount = 0;
+
+    const downloadPromises = orders.map(async (order) => {
+      if (order.ordered_design_image_url) {
+        try {
+          const productName = order.products?.name || 'Unknown Product';
+          const orderDisplayId = order.display_id || order.id;
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          const fileName = `${orderDisplayId}.png`;
+          zip.file(fileName, blobWithText);
+          downloadedCount++;
+        } catch (err) {
+          console.error(`Failed to process design for order ${order.id}:`, err);
+        }
+      }
+    });
+
+    await Promise.all(downloadPromises);
+    dismissToast(toastId);
+
+    if (downloadedCount > 0) {
+      zip.generateAsync({ type: "blob" }).then(content => {
+        saveAs(content, "all_demo_designs.zip");
+        showSuccess(`${downloadedCount} designs downloaded.`);
+      });
+    } else {
+      showError("No designs could be downloaded.");
+    }
+  };
+
   const handleBulkStatusChange = async () => {
     if (selectedOrderIds.size === 0 || !bulkNewStatus) {
       showError("No orders selected or no status chosen.");
@@ -403,7 +440,6 @@ const DemoOrderListingPage = () => {
           newStatus: bulkNewStatus,
         }),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentSession.access_token}`,
         },
       });
@@ -458,7 +494,7 @@ const DemoOrderListingPage = () => {
                   disabled={loading}
                   size="sm"
                 >
-                  <Download className="mr-2 h-4 w-4" /> Download ({selectedOrderIds.size})
+                  <Download className="mr-2 h-4 w-4" /> Download Designs ({selectedOrderIds.size})
                 </Button>
                 <Button
                   variant="destructive"
@@ -478,6 +514,9 @@ const DemoOrderListingPage = () => {
                 </Button>
               </>
             )}
+            <Button onClick={handleDownloadAllDesigns} variant="outline" size="sm" disabled={orders.length === 0 || loading}>
+              <Download className="mr-2 h-4 w-4" /> Download All Designs
+            </Button>
             <Label htmlFor="sort-by">Sort by:</Label>
             <Select value={sortColumn} onValueChange={handleSort}>
               <SelectTrigger id="sort-by" className="w-[180px]">

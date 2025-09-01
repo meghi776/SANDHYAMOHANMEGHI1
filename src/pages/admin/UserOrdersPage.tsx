@@ -295,6 +295,44 @@ const UserOrdersPage = () => {
     dismissToast(toastId);
   };
 
+  const handleDownloadAllDesigns = async () => {
+    if (orders.length === 0) {
+      showError("No orders to download designs from.");
+      return;
+    }
+
+    const toastId = showLoading(`Preparing all ${orders.length} designs for download...`);
+    const zip = new JSZip();
+    let downloadedCount = 0;
+
+    const downloadPromises = orders.map(async (order) => {
+      if (order.ordered_design_image_url) {
+        try {
+          const productName = order.products?.name || 'Unknown Product';
+          const orderDisplayId = order.display_id || order.id;
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          const fileName = `${orderDisplayId}.png`;
+          zip.file(fileName, blobWithText);
+          downloadedCount++;
+        } catch (err) {
+          console.error(`Failed to process design for order ${order.id}:`, err);
+        }
+      }
+    });
+
+    await Promise.all(downloadPromises);
+    dismissToast(toastId);
+
+    if (downloadedCount > 0) {
+      zip.generateAsync({ type: "blob" }).then(content => {
+        saveAs(content, `all_user_${userId}_designs.zip`);
+        showSuccess(`${downloadedCount} designs downloaded.`);
+      });
+    } else {
+      showError("No designs could be downloaded.");
+    }
+  };
+
   const handleBulkDownloadAddresses = () => {
     if (selectedOrderIds.size === 0) {
       showError("No orders selected. Please select at least one order to export its address.");
@@ -341,7 +379,6 @@ const UserOrdersPage = () => {
           newStatus: bulkNewStatus,
         }),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentSession.access_token}`,
         },
       });
@@ -415,6 +452,9 @@ const UserOrdersPage = () => {
                 </Button>
               </>
             )}
+            <Button onClick={handleDownloadAllDesigns} variant="outline" size="sm" disabled={orders.length === 0 || loading}>
+              <Download className="mr-2 h-4 w-4" /> Download All Designs
+            </Button>
             <Label htmlFor="sort-by">Sort by:</Label>
             <Select value={sortColumn} onValueChange={(value) => setSortColumn(value)}>
               <SelectTrigger id="sort-by" className="w-[180px]">
