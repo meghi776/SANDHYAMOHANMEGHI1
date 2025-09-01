@@ -5,9 +5,11 @@ export const addTextToImage = (imageUrl: string, productName: string, orderDispl
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.onload = () => {
+      console.log(`Image loaded successfully for order ${orderDisplayId}.`); // Added log
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) {
+        console.error(`Could not get canvas context for order ${orderDisplayId}.`); // Added log
         return reject(new Error('Could not get canvas context'));
       }
 
@@ -47,14 +49,16 @@ export const addTextToImage = (imageUrl: string, productName: string, orderDispl
 
       canvas.toBlob((blob) => {
         if (blob) {
+          console.log(`Canvas to Blob conversion successful for order ${orderDisplayId}.`); // Added log
           resolve(blob);
         } else {
+          console.error(`Canvas to Blob conversion failed for order ${orderDisplayId}. Blob is null.`); // Added log
           reject(new Error('Canvas to Blob conversion failed'));
         }
       }, 'image/png');
     };
     img.onerror = (err) => {
-      console.error("Error loading image for text addition:", err);
+      console.error(`Error loading image for text addition for order ${orderDisplayId}:`, err); // Modified log
       reject(new Error('Failed to load image'));
     };
     img.src = proxyImageUrl(imageUrl);
