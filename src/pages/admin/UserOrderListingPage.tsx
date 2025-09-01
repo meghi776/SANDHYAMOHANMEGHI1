@@ -15,11 +15,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Eye, Trash2, Image as ImageIcon, ArrowDownWideNarrow, ArrowUpWideNarrow, Download, ListChecks, Upload, ShoppingCart, Calendar as CalendarIcon, Search } from 'lucide-react';
+import { Loader2, Eye, Trash2, Image as ImageIcon, ArrowDownWideNarrow, ArrowUpWideNarrow, Download, ListChecks, Upload, ShoppingCart, Calendar as CalendarIcon, Search } from 'lucide-react'; // Added Search icon
 import { format } from 'date-fns';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import Papa from 'papaparse';
+import Papa from 'papaparse'; // Import PapaParse
 import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
 import { useSession } from '@/contexts/SessionContext';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -47,7 +47,7 @@ interface Order {
   user_email?: string | null;
   type: string;
   comment: string | null;
-  ordered_design_data: any;
+  ordered_design_data: any; // Added for export/import
 }
 
 interface UserListItem {
@@ -59,21 +59,21 @@ interface UserListItem {
 
 const OrderManagementPage = () => {
   const { session, loading: sessionLoading } = useSession();
-  const [searchParams] = useSearchParams();
-  const initialStatusFilter = searchParams.get('status') || 'all';
+  const [searchParams] = useSearchParams(); // Initialize useSearchParams
+  const initialStatusFilter = searchParams.get('status') || 'all'; // Get status from URL
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
-  const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false);
+  const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false); // Renamed state
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
-  const [editStatus, setEditStatus] = useState<string>('');
-  const [editCustomerName, setEditCustomerName] = useState('');
-  const [editCustomerAddress, setEditCustomerAddress] = useState('');
-  const [editCustomerPhone, setEditCustomerPhone] = useState('');
-  const [editPaymentMethod, setEditPaymentMethod] = useState('');
+  const [editStatus, setEditStatus] = useState<string>(''); // Renamed state
+  const [editCustomerName, setEditCustomerName] = useState(''); // New state
+  const [editCustomerAddress, setEditCustomerAddress] = useState(''); // New state
+  const [editCustomerPhone, setEditCustomerPhone] = useState(''); // New state
+  const [editPaymentMethod, setEditPaymentMethod] = useState(''); // New state
   const [editComment, setEditComment] = useState('');
   const [userName, setUserName] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<string>('created_at');
@@ -84,24 +84,25 @@ const OrderManagementPage = () => {
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [normalOrderCount, setNormalOrderCount] = useState<number | null>(null);
   const [demoOrderCount, setDemoOrderCount] = useState<number | null>(null);
-  const [processingOrderCount, setProcessingOrderCount] = useState<number | null>(null);
+  const [processingOrderCount, setProcessingOrderCount] = useState<number | null>(null); // New state for processing count
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter); // New state for status filter
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
-  const importFileInputRef = useRef<HTMLInputElement>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null); // Ref for import file input
   const [searchQuery, setSearchQuery] = useState('');
   const debounceTimeoutRef = useRef<number | null>(null);
 
   const orderStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Demo'];
-  const paymentMethods = ['Prepaid', 'COD'];
+  const paymentMethods = ['Prepaid', 'COD']; // Updated payment methods
 
   const fetchOrdersAndCounts = async () => {
     setLoading(true);
     setError(null);
     setSelectedOrderIds(new Set());
 
+    // Explicitly get the latest session before invoking
     const { data: { session: currentSession }, error: getSessionError } = await supabase.auth.getSession();
 
     if (getSessionError) {
@@ -120,7 +121,7 @@ const OrderManagementPage = () => {
     try {
       const { data: countsData, error: countsInvokeError } = await supabase.functions.invoke('get-order-counts', {
         headers: {
-          'Authorization': `Bearer ${currentSession.access_token}`,
+          'Authorization': `Bearer ${currentSession.access_token}`, // Use the fresh token
         },
       });
 
@@ -129,11 +130,11 @@ const OrderManagementPage = () => {
         showError(`Failed to load order counts: ${countsInvokeError.message}`);
         setNormalOrderCount(null);
         setDemoOrderCount(null);
-        setProcessingOrderCount(null);
+        setProcessingOrderCount(null); // Reset processing count on error
       } else if (countsData) {
         setNormalOrderCount(countsData.normalOrders);
         setDemoOrderCount(countsData.demoOrders);
-        setProcessingOrderCount(countsData.processingOrders);
+        setProcessingOrderCount(countsData.processingOrders); // Set processing count
       }
 
       const payload: { orderType: string; userId: string | null; startDate: string | null; endDate: string | null; status?: string | null; searchQuery?: string | null } = {
@@ -144,7 +145,9 @@ const OrderManagementPage = () => {
         searchQuery: searchQuery || null,
       };
 
+      // Add status filter to payload
       if (statusFilter === 'all') {
+        // For the main view, we want to see everything EXCEPT processing orders.
         payload.status = 'non-processing';
       } else {
         payload.status = statusFilter;
@@ -153,7 +156,7 @@ const OrderManagementPage = () => {
       const { data, error: invokeError } = await supabase.functions.invoke('get-orders-with-user-email', {
         body: payload,
         headers: {
-          'Authorization': `Bearer ${currentSession.access_token}`,
+          'Authorization': `Bearer ${currentSession.access_token}`, // Use the fresh token
         },
       });
 
@@ -222,11 +225,12 @@ const OrderManagementPage = () => {
   };
 
   useEffect(() => {
+    // Set initial status filter from URL param
     const statusParam = searchParams.get('status');
     if (statusParam && statusParam !== statusFilter) {
       setStatusFilter(statusParam);
     }
-  }, [searchParams]);
+  }, [searchParams]); // Only run when searchParams change
 
   useEffect(() => {
     if (debounceTimeoutRef.current) {
@@ -243,7 +247,7 @@ const OrderManagementPage = () => {
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [sortColumn, sortDirection, orderTypeFilter, selectedUserIdFilter, sessionLoading, startDate, endDate, statusFilter, searchQuery]);
+  }, [sortColumn, sortDirection, orderTypeFilter, selectedUserIdFilter, sessionLoading, startDate, endDate, statusFilter, searchQuery]); // Add searchQuery
 
   const openImageModal = (imageUrl: string | null) => {
     if (imageUrl) {
@@ -252,7 +256,7 @@ const OrderManagementPage = () => {
     }
   };
 
-  const handleEditOrderClick = (order: Order) => {
+  const handleEditOrderClick = (order: Order) => { // Renamed function
     setCurrentOrder(order);
     setEditStatus(order.status);
     setEditCustomerName(order.customer_name);
@@ -260,10 +264,10 @@ const OrderManagementPage = () => {
     setEditCustomerPhone(order.customer_phone);
     setEditPaymentMethod(order.payment_method);
     setEditComment(order.comment || '');
-    setIsEditOrderModalOpen(true);
+    setIsEditOrderModalOpen(true); // Renamed state
   };
 
-  const handleSaveOrderEdit = async () => {
+  const handleSaveOrderEdit = async () => { // Renamed function
     if (!currentOrder || !editStatus || !editCustomerName.trim() || !editCustomerAddress.trim() || !editCustomerPhone.trim() || !editPaymentMethod.trim()) {
       showError("All fields are required.");
       return;
@@ -288,7 +292,7 @@ const OrderManagementPage = () => {
       showError(`Failed to update order: ${error.message}`);
     } else {
       showSuccess("Order updated successfully!");
-      setIsEditOrderModalOpen(false);
+      setIsEditOrderModalOpen(false); // Renamed state
       fetchOrdersAndCounts();
     }
     dismissToast(toastId);
@@ -410,7 +414,6 @@ const OrderManagementPage = () => {
     const toastId = showLoading(`Preparing ${selectedOrderIds.size} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
-    let failedCount = 0; // Track failed downloads
 
     const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
 
@@ -426,10 +429,10 @@ const OrderManagementPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
-          failedCount++; // Increment failed count
+          failedCount++;
         }
       } else {
-        failedCount++; // Increment if no image URL
+        failedCount++;
       }
     });
 
@@ -439,7 +442,7 @@ const OrderManagementPage = () => {
       zip.generateAsync({ type: "blob" })
         .then(function (content) {
           saveAs(content, "selected_designs.zip");
-          showSuccess(`${downloadedCount} designs downloaded successfully!${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
+          showSuccess(`${downloadedCount} designs downloaded successfully!`);
         })
         .catch(err => {
           console.error("Error generating zip file:", err);
@@ -462,7 +465,6 @@ const OrderManagementPage = () => {
     const toastId = showLoading(`Preparing all ${orders.length} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
-    let failedCount = 0; // Track failed downloads
 
     const downloadPromises = orders.map(async (order) => {
       if (order.ordered_design_image_url) {
@@ -475,10 +477,7 @@ const OrderManagementPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
-          failedCount++; // Increment failed count
         }
-      } else {
-        failedCount++; // Increment if no image URL
       }
     });
 
@@ -488,7 +487,7 @@ const OrderManagementPage = () => {
     if (downloadedCount > 0) {
       zip.generateAsync({ type: "blob" }).then(content => {
         saveAs(content, "all_orders_designs.zip");
-        showSuccess(`${downloadedCount} designs downloaded.${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
+        showSuccess(`${downloadedCount} designs downloaded.`);
       });
     } else {
       showError("No designs could be downloaded.");
@@ -510,7 +509,7 @@ const OrderManagementPage = () => {
         'Customer Phone': order.customer_phone,
         'Product Name': order.products?.name || 'N/A',
         'Order Date': format(new Date(order.created_at), 'yyyy-MM-dd'),
-        'Order Total': order.total_price?.toFixed(2) || '0.00',
+        'Order Total': order.total_price?.toFixed(2) || '0.00', // Added Order Total
       }));
 
     const csv = Papa.unparse(dataToExport);
@@ -535,7 +534,7 @@ const OrderManagementPage = () => {
       status: order.status,
       total_price: order.total_price || 0,
       ordered_design_image_url: order.ordered_design_image_url || '',
-      ordered_design_data: JSON.stringify(order.ordered_design_data),
+      ordered_design_data: JSON.stringify(order.ordered_design_data), // Stringify JSONB
       type: order.type,
       comment: order.comment || '',
     }));
@@ -582,7 +581,7 @@ const OrderManagementPage = () => {
         }
 
         const ordersToUpsert = results.data.map((row: any) => ({
-          id: row.id || undefined,
+          id: row.id || undefined, // Allow new IDs to be generated
           user_id: row.user_id,
           product_id: row.product_id || null,
           customer_name: row.customer_name,
@@ -592,7 +591,7 @@ const OrderManagementPage = () => {
           status: row.status,
           total_price: parseFloat(row.total_price),
           ordered_design_image_url: row.ordered_design_image_url || null,
-          ordered_design_data: row.ordered_design_data || null,
+          ordered_design_data: row.ordered_design_data || null, // Keep as string, Edge Function will parse
           type: row.type,
           display_id: row.display_id || null,
           comment: row.comment || null,
@@ -633,7 +632,7 @@ const OrderManagementPage = () => {
             } else {
               showSuccess(`Import complete! Successfully imported ${data.successfulUpserts} orders.`);
             }
-            fetchOrdersAndCounts();
+            fetchOrdersAndCounts(); // Refresh the list
           } else {
             showError("Unexpected response from server during order import.");
           }
@@ -701,7 +700,7 @@ const OrderManagementPage = () => {
       showSuccess(`${data.updatedCount} orders updated successfully!`);
       setIsBulkStatusModalOpen(false);
       setBulkNewStatus('');
-      fetchOrdersAndCounts();
+      fetchOrdersAndCounts(); // Refresh the list
     } catch (err: any) {
       showError(`Failed to update orders: ${err.message}`);
     } finally {
@@ -972,6 +971,13 @@ const OrderManagementPage = () => {
                     <TableBody>
                       {orders.map((order) => (
                         <TableRow key={order.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedOrderIds.has(order.id)}
+                              onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
+                              aria-label={`Select order ${order.id}`}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium text-xs">{order.display_id || `${order.id.substring(0, 8)}...`}</TableCell>
                           <TableCell>{format(new Date(order.created_at), 'PPP')}</TableCell>
                           <TableCell>
@@ -1002,7 +1008,7 @@ const OrderManagementPage = () => {
                               variant="outline"
                               size="sm"
                               className="mr-2"
-                              onClick={() => handleEditOrderClick(order)}
+                              onClick={() => handleEditOrderClick(order)} // Renamed function
                             >
                               <Eye className="h-4 w-4" /> Edit
                             </Button>
@@ -1040,10 +1046,10 @@ const OrderManagementPage = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOrderModalOpen} onOpenChange={setIsEditOrderModalOpen}>
+      <Dialog open={isEditOrderModalOpen} onOpenChange={setIsEditOrderModalOpen}> {/* Renamed state */}
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Order Details</DialogTitle>
+            <DialogTitle>Edit Order Details</DialogTitle> {/* Changed title */}
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">

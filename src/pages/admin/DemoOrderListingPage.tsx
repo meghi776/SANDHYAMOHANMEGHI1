@@ -21,8 +21,8 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { useSession } from '@/contexts/SessionContext';
 import { addTextToImage } from '@/utils/imageUtils';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input'; // Import Input
+import { Textarea } from '@/components/ui/textarea'; // Import Textarea
 import QuickCommentEditor from '@/components/admin/QuickCommentEditor';
 
 interface Order {
@@ -53,22 +53,22 @@ const DemoOrderListingPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
-  const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false);
+  const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false); // Renamed state
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
-  const [editStatus, setEditStatus] = useState<string>('');
-  const [editCustomerName, setEditCustomerName] = useState('');
-  const [editCustomerAddress, setEditCustomerAddress] = useState('');
-  const [editCustomerPhone, setEditCustomerPhone] = useState('');
-  const [editPaymentMethod, setEditPaymentMethod] = useState('');
+  const [editStatus, setEditStatus] = useState<string>(''); // Renamed state
+  const [editCustomerName, setEditCustomerName] = useState(''); // New state
+  const [editCustomerAddress, setEditCustomerAddress] = useState(''); // New state
+  const [editCustomerPhone, setEditCustomerPhone] = useState(''); // New state
+  const [editPaymentMethod, setEditPaymentMethod] = useState(''); // New state
   const [editComment, setEditComment] = useState('');
   const [sortColumn, setSortColumn] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set()); // Changed to useState
+  const [selectedOrderIds, setSelectedOrderIds] = new Set<string>();
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
 
   const orderStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Demo'];
-  const paymentMethods = ['COD', 'Demo'];
+  const paymentMethods = ['COD', 'Demo']; // Updated payment methods
 
   const fetchOrders = async () => {
     if (sessionLoading) return;
@@ -86,7 +86,7 @@ const DemoOrderListingPage = () => {
 
     try {
       const { data, error: invokeError } = await supabase.functions.invoke('get-orders-with-user-email', {
-        body: JSON.stringify({ orderType: 'demo', status: 'non-processing' }),
+        body: JSON.stringify({ orderType: 'demo', status: 'non-processing' }), // Explicitly request non-processing demo orders
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentSession.access_token}`,
@@ -171,7 +171,7 @@ const DemoOrderListingPage = () => {
     }
   };
 
-  const handleEditOrderClick = (order: Order) => {
+  const handleEditOrderClick = (order: Order) => { // Renamed function
     setCurrentOrder(order);
     setEditStatus(order.status);
     setEditCustomerName(order.customer_name);
@@ -179,10 +179,10 @@ const DemoOrderListingPage = () => {
     setEditCustomerPhone(order.customer_phone);
     setEditPaymentMethod(order.payment_method);
     setEditComment(order.comment || '');
-    setIsEditOrderModalOpen(true);
+    setIsEditOrderModalOpen(true); // Renamed state
   };
 
-  const handleSaveOrderEdit = async () => {
+  const handleSaveOrderEdit = async () => { // Renamed function
     if (!currentOrder || !editStatus || !editCustomerName.trim() || !editCustomerAddress.trim() || !editCustomerPhone.trim() || !editPaymentMethod.trim()) {
       showError("All fields are required.");
       return;
@@ -199,7 +199,7 @@ const DemoOrderListingPage = () => {
 
 
     setLoading(true);
-    const toastId = showLoading("Updating demo order details...");
+    const toastId = showLoading("Updating demo order details..."); // Changed toast message
     const { error } = await supabase
       .from('orders')
       .update({
@@ -215,11 +215,11 @@ const DemoOrderListingPage = () => {
     dismissToast(toastId);
     if (error) {
       console.error("Error updating order status:", error);
-      showError(`Failed to update demo order: ${error.message}`);
+      showError(`Failed to update demo order: ${error.message}`); // Changed toast message
     } else {
-      showSuccess("Demo order updated successfully!");
-      setIsEditOrderModalOpen(false);
-      fetchOrders();
+      showSuccess("Demo order updated successfully!"); // Changed toast message
+      setIsEditOrderModalOpen(false); // Renamed state
+      fetchOrders(); // Re-fetch orders from the server to ensure consistency
     }
     setLoading(false);
   };
@@ -337,12 +337,12 @@ const DemoOrderListingPage = () => {
     const toastId = showLoading(`Preparing ${selectedOrderIds.size} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
-    let failedCount = 0; // Track failed downloads
 
     const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
 
-    const downloadPromises = selectedOrders.map(async (order) => {
-      if (order.ordered_design_image_url) {
+    const downloadPromises = Array.from(selectedOrderIds).map(async (orderId) => {
+      const order = orders.find(o => o.id === orderId);
+      if (order && order.ordered_design_image_url) {
         try {
           const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
@@ -353,10 +353,10 @@ const DemoOrderListingPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
-          failedCount++; // Increment failed count
+          failedCount++;
         }
       } else {
-        failedCount++; // Increment if no image URL
+        failedCount++;
       }
     });
 
@@ -366,7 +366,7 @@ const DemoOrderListingPage = () => {
       zip.generateAsync({ type: "blob" })
         .then(function (content) {
           saveAs(content, "selected_demo_designs.zip");
-          showSuccess(`${downloadedCount} designs downloaded successfully!${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
+          showSuccess(`${downloadedCount} designs downloaded successfully!`);
         })
         .catch(err => {
           console.error("Error generating zip file:", err);
@@ -389,7 +389,6 @@ const DemoOrderListingPage = () => {
     const toastId = showLoading(`Preparing all ${orders.length} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
-    let failedCount = 0; // Track failed downloads
 
     const downloadPromises = orders.map(async (order) => {
       if (order.ordered_design_image_url) {
@@ -402,10 +401,7 @@ const DemoOrderListingPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
-          failedCount++; // Increment failed count
         }
-      } else {
-        failedCount++; // Increment if no image URL
       }
     });
 
@@ -415,7 +411,7 @@ const DemoOrderListingPage = () => {
     if (downloadedCount > 0) {
       zip.generateAsync({ type: "blob" }).then(content => {
         saveAs(content, "all_demo_designs.zip");
-        showSuccess(`${downloadedCount} designs downloaded.${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
+        showSuccess(`${downloadedCount} designs downloaded.`);
       });
     } else {
       showError("No designs could be downloaded.");
@@ -439,7 +435,7 @@ const DemoOrderListingPage = () => {
 
     try {
       const { data, error: invokeError } = await supabase.functions.invoke('bulk-update-order-status', {
-        body: JSON.stringify({
+        body: JSON.stringify({ // Explicitly stringify
           orderIds: Array.from(selectedOrderIds),
           newStatus: bulkNewStatus,
         }),
@@ -455,7 +451,7 @@ const DemoOrderListingPage = () => {
       showSuccess(`${data.updatedCount} orders updated successfully!`);
       setIsBulkStatusModalOpen(false);
       setBulkNewStatus('');
-      fetchOrders();
+      fetchOrders(); // Refresh the list
     } catch (err: any) {
       showError(`Failed to update orders: ${err.message}`);
     } finally {
@@ -618,7 +614,7 @@ const DemoOrderListingPage = () => {
                               variant="outline"
                               size="sm"
                               className="mr-2"
-                              onClick={() => handleEditOrderClick(order)}
+                              onClick={() => handleEditOrderClick(order)} // Renamed function
                             >
                               <Eye className="h-4 w-4" /> Edit
                             </Button>
@@ -641,6 +637,7 @@ const DemoOrderListingPage = () => {
         </CardContent>
       </Card>
 
+      {/* Image Preview Dialog */}
       <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -656,10 +653,11 @@ const DemoOrderListingPage = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditOrderModalOpen} onOpenChange={setIsEditOrderModalOpen}>
+      {/* Edit Order Dialog */}
+      <Dialog open={isEditOrderModalOpen} onOpenChange={setIsEditOrderModalOpen}> {/* Renamed state */}
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Demo Order Details</DialogTitle>
+            <DialogTitle>Edit Demo Order Details</DialogTitle> {/* Changed title */}
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">

@@ -70,9 +70,9 @@ const ShippedOrdersPage = () => {
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const importFileInputRef = useRef<HTMLInputElement>(null);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined); // New state for start date
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);     // New state for end date
+  const importFileInputRef = useRef<HTMLInputElement>(null); // Ref for import file input
 
   const orderStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Demo'];
   const paymentMethods = ['COD'];
@@ -148,7 +148,7 @@ const ShippedOrdersPage = () => {
     if (!sessionLoading) {
       fetchOrders();
     }
-  }, [sessionLoading, sortColumn, sortDirection, startDate, endDate]);
+  }, [sessionLoading, sortColumn, sortDirection, startDate, endDate]); // Add startDate and endDate to dependencies
 
   const openImageModal = (imageUrl: string | null) => {
     if (imageUrl) {
@@ -237,7 +237,6 @@ const ShippedOrdersPage = () => {
     const toastId = showLoading(`Preparing ${selectedOrderIds.size} designs...`);
     const zip = new JSZip();
     let downloadedCount = 0;
-    let failedCount = 0; // Track failed downloads
 
     const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
     const downloadPromises = selectedOrders.map(async (order) => {
@@ -251,10 +250,7 @@ const ShippedOrdersPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
-          failedCount++; // Increment failed count
         }
-      } else {
-        failedCount++; // Increment if no image URL
       }
     });
 
@@ -264,7 +260,7 @@ const ShippedOrdersPage = () => {
     if (downloadedCount > 0) {
       zip.generateAsync({ type: "blob" }).then(content => {
         saveAs(content, "shipped_designs.zip");
-        showSuccess(`${downloadedCount} designs downloaded.${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
+        showSuccess(`${downloadedCount} designs downloaded.`);
       });
     } else {
       showError("No designs could be downloaded.");
@@ -280,7 +276,6 @@ const ShippedOrdersPage = () => {
     const toastId = showLoading(`Preparing all ${orders.length} designs for download...`);
     const zip = new JSZip();
     let downloadedCount = 0;
-    let failedCount = 0; // Track failed downloads
 
     const downloadPromises = orders.map(async (order) => {
       if (order.ordered_design_image_url) {
@@ -293,10 +288,7 @@ const ShippedOrdersPage = () => {
           downloadedCount++;
         } catch (err) {
           console.error(`Failed to process design for order ${order.id}:`, err);
-          failedCount++; // Increment failed count
         }
-      } else {
-        failedCount++; // Increment if no image URL
       }
     });
 
@@ -306,7 +298,7 @@ const ShippedOrdersPage = () => {
     if (downloadedCount > 0) {
       zip.generateAsync({ type: "blob" }).then(content => {
         saveAs(content, "all_shipped_designs.zip");
-        showSuccess(`${downloadedCount} designs downloaded.${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
+        showSuccess(`${downloadedCount} designs downloaded.`);
       });
     } else {
       showError("No designs could be downloaded.");
@@ -328,7 +320,7 @@ const ShippedOrdersPage = () => {
         'Customer Phone': order.customer_phone,
         'Product Name': order.products?.name || 'N/A',
         'Order Date': format(new Date(order.created_at), 'yyyy-MM-dd'),
-        'Order Total': order.total_price?.toFixed(2) || '0.00',
+        'Order Total': order.total_price?.toFixed(2) || '0.00', // Added Order Total
       }));
 
     const csv = Papa.unparse(dataToExport);
@@ -353,7 +345,7 @@ const ShippedOrdersPage = () => {
       status: order.status,
       total_price: order.total_price || 0,
       ordered_design_image_url: order.ordered_design_image_url || '',
-      ordered_design_data: JSON.stringify(order.ordered_design_data),
+      ordered_design_data: JSON.stringify(order.ordered_design_data), // Stringify JSONB
       type: order.type,
       comment: order.comment || '',
     }));
@@ -400,7 +392,7 @@ const ShippedOrdersPage = () => {
         }
 
         const ordersToUpsert = results.data.map((row: any) => ({
-          id: row.id || undefined,
+          id: row.id || undefined, // Allow new IDs to be generated
           user_id: row.user_id,
           product_id: row.product_id || null,
           customer_name: row.customer_name,
@@ -410,7 +402,7 @@ const ShippedOrdersPage = () => {
           status: row.status,
           total_price: parseFloat(row.total_price),
           ordered_design_image_url: row.ordered_design_image_url || null,
-          ordered_design_data: row.ordered_design_data || null,
+          ordered_design_data: row.ordered_design_data || null, // Keep as string, Edge Function will parse
           type: row.type,
           display_id: row.display_id || null,
           comment: row.comment || null,
@@ -451,7 +443,7 @@ const ShippedOrdersPage = () => {
             } else {
               showSuccess(`Import complete! Successfully imported ${data.successfulUpserts} orders.`);
             }
-            fetchOrders();
+            fetchOrders(); // Refresh the list
           } else {
             showError("Unexpected response from server during order import.");
           }
@@ -519,7 +511,7 @@ const ShippedOrdersPage = () => {
       showSuccess(`${data.updatedCount} orders updated successfully!`);
       setIsBulkStatusModalOpen(false);
       setBulkNewStatus('');
-      fetchOrders();
+      fetchOrders(); // Refresh the list
     } catch (err: any) {
       showError(`Failed to update orders: ${err.message}`);
     } finally {
