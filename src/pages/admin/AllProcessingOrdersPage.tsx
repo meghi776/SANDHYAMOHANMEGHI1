@@ -259,7 +259,7 @@ const AllProcessingOrdersPage = () => {
         try {
           const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
-          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, orderDisplayId); // Removed productName
           const fileName = `${orderDisplayId}.png`;
           zip.file(fileName, blobWithText);
           downloadedCount++;
@@ -301,7 +301,7 @@ const AllProcessingOrdersPage = () => {
         try {
           const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
-          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, orderDisplayId); // Removed productName
           const fileName = `${orderDisplayId}.png`;
           zip.file(fileName, blobWithText);
           downloadedCount++;
