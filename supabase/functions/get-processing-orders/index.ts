@@ -66,7 +66,25 @@ serve(async (req) => {
     }
     console.log(`Edge Function: User ${invokerUser.id} is an admin.`);
 
-    const { page = 1, itemsPerPage = 10 } = await req.json();
+    let page = 1;
+    let itemsPerPage = 10;
+
+    // Check if there's a body and if it's JSON
+    const contentType = req.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const requestBody = await req.json();
+        page = requestBody.page ?? 1;
+        itemsPerPage = requestBody.itemsPerPage ?? 10;
+        console.log(`Edge Function: Parsed pagination from body - page: ${page}, itemsPerPage: ${itemsPerPage}`);
+      } catch (jsonParseError) {
+        console.warn("Edge Function: Could not parse JSON body, using default pagination. Error:", jsonParseError);
+        // Continue with default page and itemsPerPage
+      }
+    } else {
+      console.log("Edge Function: No JSON body or content-type not application/json, using default pagination.");
+    }
+
     const offset = (page - 1) * itemsPerPage;
     const limit = itemsPerPage;
 
