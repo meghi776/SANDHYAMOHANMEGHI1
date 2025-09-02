@@ -28,6 +28,14 @@ import { Textarea } from '@/components/ui/textarea';
 import QuickCommentEditor from '@/components/admin/QuickCommentEditor';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface Order {
   id: string;
@@ -74,6 +82,11 @@ const AllProcessingOrdersPage = () => {
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const importFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
+
   const orderStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Demo'];
   const paymentMethods = ['COD'];
 
@@ -92,6 +105,7 @@ const AllProcessingOrdersPage = () => {
 
     try {
       let query = supabase.functions.invoke('get-processing-orders', {
+        body: { page: currentPage, itemsPerPage: itemsPerPage }, // Pass pagination parameters
         headers: {
           'Authorization': `Bearer ${currentSession.access_token}`,
         },
@@ -133,6 +147,7 @@ const AllProcessingOrdersPage = () => {
           }
         });
         setOrders(filteredData);
+        setTotalOrdersCount(data.totalOrdersCount); // Set total count from Edge Function
       } else {
         throw new Error("Unexpected response from server.");
       }
@@ -148,7 +163,7 @@ const AllProcessingOrdersPage = () => {
     if (!sessionLoading) {
       fetchOrders();
     }
-  }, [sessionLoading, sortColumn, sortDirection, startDate, endDate]);
+  }, [sessionLoading, sortColumn, sortDirection, startDate, endDate, currentPage, itemsPerPage]); // Add pagination states to dependencies
 
   const openImageModal = (imageUrl: string | null) => {
     if (imageUrl) {
@@ -244,7 +259,7 @@ const AllProcessingOrdersPage = () => {
         try {
           const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
-          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, orderDisplayId); // Removed productName
           const fileName = `${orderDisplayId}.png`;
           zip.file(fileName, blobWithText);
           downloadedCount++;
@@ -286,7 +301,7 @@ const AllProcessingOrdersPage = () => {
         try {
           const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
-          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, orderDisplayId); // Removed productName
           const fileName = `${orderDisplayId}.png`;
           zip.file(fileName, blobWithText);
           downloadedCount++;
@@ -545,6 +560,8 @@ const AllProcessingOrdersPage = () => {
   const isAllSelected = orders.length > 0 && selectedOrderIds.size === orders.length;
   const isIndeterminate = selectedOrderIds.size > 0 && selectedOrderIds.size < orders.length;
 
+  const totalPages = Math.ceil(totalOrdersCount / itemsPerPage);
+
   return (
     <div className="p-4">
       <div className="flex items-center mb-6">
@@ -698,6 +715,32 @@ const AllProcessingOrdersPage = () => {
                   ))}
                 </TableBody>
               </Table>
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        isActive={currentPage === i + 1}
+                        onClick={() => setCurrentPage(i + 1)}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </CardContent>
