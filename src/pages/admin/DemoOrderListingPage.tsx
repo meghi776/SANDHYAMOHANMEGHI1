@@ -1,0 +1,800 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Eye, Trash2, Image as ImageIcon, ArrowDownWideNarrow, ArrowUpWideNarrow, Download, ListChecks } from 'lucide-react';
+import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { useSession } from '@/contexts/SessionContext';
+import { addTextToImage } from '@/utils/imageUtils';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import QuickCommentEditor from '@/components/admin/QuickCommentEditor';
+
+interface Order {
+  id: string;
+  display_id: string | null;
+  created_at: string;
+  customer_name: string;
+  customer_address: string;
+  customer_phone: string;
+  payment_method: string;
+  status: string;
+  total_price: number;
+  ordered_design_image_url: string | null;
+  product_id: string | null;
+  products: { name: string } | null;
+  profiles: { first_name: string | null; last_name: string | null; } | null;
+  user_id: string;
+  user_email?: string | null;
+  type: string;
+  comment: string | null;
+}
+
+const DemoOrderListingPage = () => {
+  const { session, loading: sessionLoading } = useSession();
+  const [rawOrders, setRawOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
+  const [editStatus, setEditStatus] = useState<string>('');
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [editCustomerAddress, setEditCustomerAddress] = useState('');
+  const [editCustomerPhone, setEditCustomerPhone] = useState('');
+  const [editPaymentMethod, setEditPaymentMethod] = useState('');
+  const [editComment, setEditComment] = useState('');
+  const [sortColumn, setSortColumn] = useState<string>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set()); // Changed to useState
+  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
+  const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
+
+  const orderStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Demo'];
+  const paymentMethods = ['COD', 'Demo'];
+
+  const fetchOrders = async () => {
+    if (sessionLoading) return;
+
+    setLoading(true);
+    setError(null);
+    setSelectedOrderIds(new Set());
+
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (!currentSession) {
+      showError("Authentication required to fetch demo orders.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('get-orders-with-user-email', {
+        body: JSON.stringify({ orderType: 'demo', status: 'non-processing' }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentSession.access_token}`,
+        },
+      });
+
+      if (invokeError) {
+        console.error("Edge Function Invoke Error:", invokeError);
+        let errorMessage = invokeError.message;
+        if (invokeError.context?.data) {
+          try {
+            const parsedError = JSON.parse(invokeError.context.data);
+            if (parsedError.error) {
+              errorMessage = parsedError.error;
+            }
+          } catch (e) {
+            // Fallback
+          }
+        }
+        showError(`Failed to load demo orders: ${errorMessage}`);
+        setError(errorMessage);
+      } else if (data && data.orders) {
+        setRawOrders(data.orders || []);
+      } else {
+        showError("Unexpected response from server when fetching demo orders.");
+        setError("Unexpected response from server.");
+      }
+    } catch (err: any) {
+      console.error("Network or unexpected error:", err);
+      showError(err.message || "An unexpected error occurred while fetching demo orders.");
+      setError(err.message || "An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [sessionLoading]);
+
+  useEffect(() => {
+    let sortedData = [...rawOrders];
+    sortedData.sort((a, b) => {
+      let valA: any;
+      let valB: any;
+
+      if (sortColumn === 'user_email') {
+        valA = a.user_email || '';
+        valB = b.user_email || '';
+      } else if (sortColumn === 'customer_name') {
+        valA = `${a.profiles?.first_name || ''} ${a.profiles?.last_name || ''}`.trim() || a.customer_name;
+        valB = `${b.profiles?.first_name || ''} ${b.profiles?.last_name || ''}`.trim() || b.customer_name;
+      } else {
+        valA = a[sortColumn as keyof Order];
+        valB = b[sortColumn as keyof Order];
+      }
+
+      if (valA === null || valA === undefined) return 1;
+      if (valB === null || valB === undefined) return -1;
+
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return sortDirection === 'asc' ? valA - valB : valB - valA;
+      }
+      
+      if (sortColumn === 'created_at') {
+         const dateA = new Date(valA as string);
+         const dateB = new Date(valB as string);
+         return sortDirection === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+      }
+
+      return sortDirection === 'asc' 
+        ? String(valA).localeCompare(String(valB)) 
+        : String(valB).localeCompare(String(valA));
+    });
+    setOrders(sortedData);
+  }, [rawOrders, sortColumn, sortDirection]);
+
+  const openImageModal = (imageUrl: string | null) => {
+    if (imageUrl) {
+      setCurrentImageUrl(imageUrl);
+      setIsImageModalOpen(true);
+    }
+  };
+
+  const handleEditOrderClick = (order: Order) => {
+    setCurrentOrder(order);
+    setEditStatus(order.status);
+    setEditCustomerName(order.customer_name);
+    setEditCustomerAddress(order.customer_address);
+    setEditCustomerPhone(order.customer_phone);
+    setEditPaymentMethod(order.payment_method);
+    setEditComment(order.comment || '');
+    setIsEditOrderModalOpen(true);
+  };
+
+  const handleSaveOrderEdit = async () => {
+    if (!currentOrder || !editStatus || !editCustomerName.trim() || !editCustomerAddress.trim() || !editCustomerPhone.trim() || !editPaymentMethod.trim()) {
+      showError("All fields are required.");
+      return;
+    }
+
+    console.log("DemoOrderListingPage: Attempting to save order edit.");
+    console.log("Order ID:", currentOrder.id);
+    console.log("New Status:", editStatus);
+    console.log("New Customer Name:", editCustomerName);
+    console.log("New Customer Address:", editCustomerAddress);
+    console.log("New Customer Phone:", editCustomerPhone);
+    console.log("New Payment Method:", editPaymentMethod);
+    console.log("New Comment:", editComment);
+
+
+    setLoading(true);
+    const toastId = showLoading("Updating demo order details...");
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: editStatus,
+        customer_name: editCustomerName.trim(),
+        customer_address: editCustomerAddress.trim(),
+        customer_phone: editCustomerPhone.trim(),
+        payment_method: editPaymentMethod.trim(),
+        comment: editComment.trim() === '' ? null : editComment.trim(),
+      })
+      .eq('id', currentOrder.id);
+
+    dismissToast(toastId);
+    if (error) {
+      console.error("Error updating order status:", error);
+      showError(`Failed to update demo order: ${error.message}`);
+    } else {
+      showSuccess("Demo order updated successfully!");
+      setIsEditOrderModalOpen(false);
+      fetchOrders();
+    }
+    setLoading(false);
+  };
+
+  const deleteSingleOrder = async (id: string, imageUrl: string | null) => {
+    if (imageUrl && imageUrl.startsWith('https://smpjbedvyqensurarrym.supabase.co/storage/v1/object/public/order-mockups/')) {
+      const fileName = imageUrl.split('/').pop();
+      if (fileName) {
+        const { error: storageError } = await supabase.storage
+          .from('order-mockups')
+          .remove([`orders/${fileName}`]);
+        if (storageError) {
+          console.error("Error deleting order image from storage:", storageError);
+          showError(`Failed to delete demo order image from storage: ${storageError.message}`);
+          return false;
+        }
+      }
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Error deleting order:", error);
+      showError(`Failed to delete demo order: ${error.message}`);
+      return false;
+    }
+    return true;
+  };
+
+  const handleDeleteOrder = async (id: string, imageUrl: string | null) => {
+    if (!window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) {
+      return;
+    }
+    setLoading(true);
+    const toastId = showLoading("Deleting demo order...");
+    const success = await deleteSingleOrder(id, imageUrl);
+    if (success) {
+      showSuccess("Demo order deleted successfully!");
+      setRawOrders(prev => prev.filter(o => o.id !== id));
+    }
+    dismissToast(toastId);
+    setLoading(false);
+  };
+
+  const handleSelectOrder = (orderId: string, isChecked: boolean) => {
+    setSelectedOrderIds(prev => {
+      const newSelection = new Set(prev);
+      if (isChecked) {
+        newSelection.add(orderId);
+      } else {
+        newSelection.delete(orderId);
+      }
+      return newSelection;
+    });
+  };
+
+  const handleSelectAllOrders = (isChecked: boolean) => {
+    if (isChecked) {
+      const allOrderIds = new Set(orders.map(order => order.id));
+      setSelectedOrderIds(allOrderIds);
+    } else {
+      setSelectedOrderIds(new Set());
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedOrderIds.size === 0) {
+      showError("No orders selected. Please select at least one order to delete.");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ${selectedOrderIds.size} selected orders? This action cannot be undone.`)) {
+      return;
+    }
+
+    setLoading(true);
+    const toastId = showLoading(`Deleting ${selectedOrderIds.size} orders...`);
+    let successfulDeletions = 0;
+    let failedDeletions = 0;
+
+    for (const orderId of selectedOrderIds) {
+      const orderToDelete = orders.find(o => o.id === orderId);
+      if (orderToDelete) {
+        const success = await deleteSingleOrder(orderId, orderToDelete.ordered_design_image_url);
+        if (success) {
+          successfulDeletions++;
+        } else {
+          failedDeletions++;
+        }
+      }
+    }
+
+    setRawOrders(prev => prev.filter(o => !selectedOrderIds.has(o.id)));
+    dismissToast(toastId);
+    setLoading(false);
+    if (failedDeletions === 0) {
+      showSuccess(`${successfulDeletions} orders deleted successfully!`);
+    } else if (successfulDeletions > 0) {
+      showError(`${successfulDeletions} orders deleted, but ${failedDeletions} failed.`);
+    } else {
+      showError("Failed to delete any selected orders.");
+    }
+  };
+
+  const handleBulkDownloadDesigns = async () => {
+    if (selectedOrderIds.size === 0) {
+      showError("No designs selected. Please select at least one order to download its design.");
+      return;
+    }
+
+    setLoading(true);
+    const toastId = showLoading(`Preparing ${selectedOrderIds.size} designs for download...`);
+    const zip = new JSZip();
+    let downloadedCount = 0;
+    let failedCount = 0; // Track failed downloads
+
+    const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
+
+    const downloadPromises = selectedOrders.map(async (order) => {
+      if (order.ordered_design_image_url) {
+        try {
+          const productName = order.products?.name || 'Unknown Product';
+          const orderDisplayId = order.display_id || order.id;
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          
+          const fileName = `${orderDisplayId}.png`;
+          zip.file(fileName, blobWithText);
+          downloadedCount++;
+        } catch (err) {
+          console.error(`Failed to process design for order ${order.id}:`, err);
+          failedCount++; // Increment failed count
+        }
+      } else {
+        failedCount++; // Increment if no image URL
+      }
+    });
+
+    await Promise.all(downloadPromises);
+
+    if (downloadedCount > 0) {
+      zip.generateAsync({ type: "blob" })
+        .then(function (content) {
+          saveAs(content, "selected_demo_designs.zip");
+          showSuccess(`${downloadedCount} designs downloaded successfully!${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
+        })
+        .catch(err => {
+          console.error("Error generating zip file:", err);
+          showError("Error generating zip file for download.");
+        });
+    } else {
+      showError("No designs were successfully downloaded.");
+    }
+    dismissToast(toastId);
+    setLoading(false);
+  };
+
+  const handleDownloadAllDesigns = async () => {
+    if (orders.length === 0) {
+      showError("No orders to download designs from.");
+      return;
+    }
+
+    setLoading(true);
+    const toastId = showLoading(`Preparing all ${orders.length} designs for download...`);
+    const zip = new JSZip();
+    let downloadedCount = 0;
+    let failedCount = 0; // Track failed downloads
+
+    const downloadPromises = orders.map(async (order) => {
+      if (order.ordered_design_image_url) {
+        try {
+          const productName = order.products?.name || 'Unknown Product';
+          const orderDisplayId = order.display_id || order.id;
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, productName, orderDisplayId);
+          const fileName = `${orderDisplayId}.png`;
+          zip.file(fileName, blobWithText);
+          downloadedCount++;
+        } catch (err) {
+          console.error(`Failed to process design for order ${order.id}:`, err);
+          failedCount++; // Increment failed count
+        }
+      } else {
+        failedCount++; // Increment if no image URL
+      }
+    });
+
+    await Promise.all(downloadPromises);
+    dismissToast(toastId);
+
+    if (downloadedCount > 0) {
+      zip.generateAsync({ type: "blob" }).then(content => {
+        saveAs(content, "all_demo_designs.zip");
+        showSuccess(`${downloadedCount} designs downloaded.${failedCount > 0 ? ` ${failedCount} failed.` : ''}`); // Report failed count
+      });
+    } else {
+      showError("No designs could be downloaded.");
+    }
+  };
+
+  const handleBulkStatusChange = async () => {
+    if (selectedOrderIds.size === 0 || !bulkNewStatus) {
+      showError("No orders selected or no status chosen.");
+      return;
+    }
+
+    const toastId = showLoading(`Updating ${selectedOrderIds.size} orders to "${bulkNewStatus}"...`);
+    
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (!currentSession) {
+      dismissToast(toastId);
+      showError("Authentication required.");
+      return;
+    }
+
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('bulk-update-order-status', {
+        body: JSON.stringify({
+          orderIds: Array.from(selectedOrderIds),
+          newStatus: bulkNewStatus,
+        }),
+        headers: {
+          'Authorization': `Bearer ${currentSession.access_token}`,
+        },
+      });
+
+      if (invokeError) {
+        throw new Error(invokeError.message);
+      }
+
+      showSuccess(`${data.updatedCount} orders updated successfully!`);
+      setIsBulkStatusModalOpen(false);
+      setBulkNewStatus('');
+      fetchOrders();
+    } catch (err: any) {
+      showError(`Failed to update orders: ${err.message}`);
+    } finally {
+      dismissToast(toastId);
+    }
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (column: string) => {
+    if (sortColumn === column) {
+      return sortDirection === 'asc' ? <ArrowUpWideNarrow className="ml-1 h-3 w-3" /> : <ArrowDownWideNarrow className="ml-1 h-3 w-3" />;
+    }
+    return null;
+  };
+
+  const isAllSelected = orders.length > 0 && selectedOrderIds.size === orders.length;
+  const isIndeterminate = selectedOrderIds.size > 0 && selectedOrderIds.size < orders.length;
+
+  return (
+    <div className="p-4">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-100">Demo Order Management</h1>
+
+      <Card>
+        <CardHeader className="flex flex-row justify-between items-center">
+          <CardTitle>Demo Orders List</CardTitle>
+          <div className="flex items-center space-x-2">
+            {selectedOrderIds.size > 0 && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleBulkDownloadDesigns}
+                  disabled={loading}
+                  size="sm"
+                >
+                  <Download className="mr-2 h-4 w-4" /> Download Designs ({selectedOrderIds.size})
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                  disabled={loading}
+                  size="sm"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedOrderIds.size})
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsBulkStatusModalOpen(true)}
+                  disabled={loading}
+                  size="sm"
+                >
+                  <ListChecks className="mr-2 h-4 w-4" /> Change Status ({selectedOrderIds.size})
+                </Button>
+              </>
+            )}
+            <Button onClick={handleDownloadAllDesigns} variant="outline" size="sm" disabled={orders.length === 0 || loading}>
+              <Download className="mr-2 h-4 w-4" /> Download All Designs
+            </Button>
+            <Label htmlFor="sort-by">Sort by:</Label>
+            <Select value={sortColumn} onValueChange={handleSort}>
+              <SelectTrigger id="sort-by" className="w-[180px]">
+                <SelectValue placeholder="Select column" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">Order Date</SelectItem>
+                <SelectItem value="customer_name">Customer Name</SelectItem>
+                <SelectItem value="customer_phone">Phone Number</SelectItem>
+                <SelectItem value="user_email">User Email</SelectItem>
+                <SelectItem value="total_price">Total Price</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+            >
+              {sortDirection === 'asc' ? (
+                <ArrowUpWideNarrow className="h-4 w-4" />
+              ) : (
+                <ArrowDownWideNarrow className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+            </div>
+          )}
+
+          {error && (
+            <p className="text-red-500">Error: {error}</p>
+          )}
+
+          {!loading && !error && (
+            <>
+              {orders.length === 0 ? (
+                <p className="text-gray-600 dark:text-gray-300">No demo orders found.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[30px]">
+                          <Checkbox
+                            checked={isAllSelected}
+                            onCheckedChange={handleSelectAllOrders}
+                            aria-label="Select all"
+                          />
+                        </TableHead>
+                        <TableHead>Order ID</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Customer Name</TableHead>
+                        <TableHead>User Email</TableHead>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Design</TableHead>
+                        <TableHead>Comment</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium text-xs">{order.display_id || `${order.id.substring(0, 8)}...`}</TableCell>
+                          <TableCell>{format(new Date(order.created_at), 'PPP')}</TableCell>
+                          <TableCell>
+                            <Link to={`/admin/orders/${order.user_id}`} className="text-blue-600 hover:underline">
+                              {order.profiles?.first_name || 'N/A'} {order.profiles?.last_name || ''}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{order.user_email || 'N/A'}</TableCell>
+                          <TableCell>{order.products?.name || 'N/A'}</TableCell>
+                          <TableCell>
+                            {order.ordered_design_image_url ? (
+                              <Button variant="outline" size="sm" onClick={() => openImageModal(order.ordered_design_image_url)}>
+                                <ImageIcon className="h-4 w-4" /> View
+                              </Button>
+                            ) : (
+                              'N/A'
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <QuickCommentEditor order={order} onUpdate={fetchOrders} />
+                          </TableCell>
+                          <TableCell>{order.status}</TableCell>
+                          <TableCell className="text-right">₹{order.total_price?.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mr-2"
+                              onClick={() => handleEditOrderClick(order)}
+                            >
+                              <Eye className="h-4 w-4" /> Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteOrder(order.id, order.ordered_design_image_url)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Ordered Design</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center items-center py-4">
+            {currentImageUrl ? (
+              <img src={currentImageUrl} alt="Ordered Design" className="max-w-full h-auto border rounded-md" />
+            ) : (
+              <p>No image available.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditOrderModalOpen} onOpenChange={setIsEditOrderModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Demo Order Details</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="order-id" className="text-right">
+                Order ID
+              </Label>
+              <p id="order-id" className="col-span-3 font-medium">{currentOrder?.display_id || `${currentOrder?.id.substring(0, 8)}...`}</p>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="product-name" className="text-right">
+                Product
+              </Label>
+              <p id="product-name" className="col-span-3">{currentOrder?.products?.name || 'N/A'}</p>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="total-price" className="text-right">
+                Total Price
+              </Label>
+              <p id="total-price" className="col-span-3">₹{currentOrder?.total_price?.toFixed(2)}</p>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer-name" className="text-right">
+                Customer Name
+              </Label>
+              <Input
+                id="customer-name"
+                value={editCustomerName}
+                onChange={(e) => setEditCustomerName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer-address" className="text-right">
+                Customer Address
+              </Label>
+              <Textarea
+                id="customer-address"
+                value={editCustomerAddress}
+                onChange={(e) => setEditCustomerAddress(e.target.value)}
+                className="col-span-3"
+                rows={4}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customer-phone" className="text-right">
+                Customer Phone
+              </Label>
+              <Input
+                id="customer-phone"
+                value={editCustomerPhone}
+                onChange={(e) => setEditCustomerPhone(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="payment-method" className="text-right">
+                Payment Method
+              </Label>
+              <Select value={editPaymentMethod} onValueChange={setEditPaymentMethod}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods.map(method => (
+                    <SelectItem key={method} value={method}>{method}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="new-status" className="text-right">
+                Status
+              </Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select new status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orderStatuses.map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-comment" className="text-right">
+                Comment
+              </Label>
+              <Textarea
+                id="edit-comment"
+                value={editComment}
+                onChange={(e) => setEditComment(e.target.value)}
+                className="col-span-3"
+                placeholder="Add an internal comment for this order..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOrderModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveOrderEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isBulkStatusModalOpen} onOpenChange={setIsBulkStatusModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk Change Order Status</DialogTitle>
+            <DialogDescription>
+              Select a new status to apply to the {selectedOrderIds.size} selected orders.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="bulk-status">New Status</Label>
+            <Select value={bulkNewStatus} onValueChange={setBulkNewStatus}>
+              <SelectTrigger id="bulk-status">
+                <SelectValue placeholder="Select a status" />
+              </SelectTrigger>
+              <SelectContent>
+                {orderStatuses.map(status => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBulkStatusModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleBulkStatusChange} disabled={!bulkNewStatus || loading}>
+              Apply Status
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default DemoOrderListingPage;
