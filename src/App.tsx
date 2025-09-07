@@ -3,7 +3,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ProductListingPage from "./pages/ProductListingPage";
 import BrandsPage from "./pages/BrandsPage";
-import SessionContextWrapper from "./components/SessionContextWrapper";
+import { SessionContextProvider } from "./contexts/SessionContext"; // Import directly
 import { Toaster } from "react-hot-toast";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLayout from "./components/AdminLayout";
@@ -17,7 +17,7 @@ import DemoOrderListingPage from "./pages/admin/DemoOrderListingPage";
 import ProductCustomizerPage from "./pages/ProductCustomizerPage";
 import OrderHistoryPage from "./pages/OrderHistoryPage";
 import PublicLayout from "./components/PublicLayout";
-import CustomizerLayout from "./components/CustomizerLayout"; // Import the new CustomizerLayout
+import CustomizerLayout from "./components/CustomizerLayout";
 import NotFound from "./pages/NotFound";
 import { DemoOrderModalProvider } from "./contexts/DemoOrderModalContext";
 import DemoUsersWithOrdersPage from "./pages/admin/DemoUsersWithOrdersPage";
@@ -41,20 +41,18 @@ function App() {
     <>
       <Toaster />
       <Router>
-        {/* Move useNavigate and useLocation inside Router context */}
         <AppContent />
       </Router>
     </>
   );
 }
 
-// New component to wrap routes and use hooks
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
   return (
-    <SessionContextWrapper navigate={navigate} location={location}>
+    <SessionContextProvider navigate={navigate} location={location}> {/* Directly use SessionContextProvider */}
       <DemoOrderModalProvider>
         <Routes>
           <Route path="/" element={<PublicLayout />}>
@@ -62,7 +60,6 @@ function AppContent() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<MobileSignUp />} />
             <Route path="/categories/:categoryId/brands" element={<BrandsPage />} />
-            {/* ProductCustomizerPage now uses CustomizerLayout */}
             <Route path="/orders" element={<OrderHistoryPage />} />
             <Route path="/order-success" element={<OrderSuccessPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
@@ -72,17 +69,14 @@ function AppContent() {
             <Route path="/contact-us" element={<ContactUsPage />} />
           </Route>
 
-          {/* Route for ProductCustomizerPage using CustomizerLayout */}
           <Route path="/customize-cover/:productId" element={<CustomizerLayout />}>
             <Route index element={<ProductCustomizerPage />} />
           </Route>
 
-          {/* ProductListingPage remains under PublicLayout as it's a general public page */}
           <Route path="/categories/:categoryId/brands/:brandId/products" element={<PublicLayout />}>
             <Route index element={<ProductListingPage />} />
           </Route>
 
-          {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UserManagementPage />} />
@@ -103,11 +97,10 @@ function AppContent() {
             <Route path="returns" element={<ReturnsPage />} />
           </Route>
 
-          {/* Catch-all route for 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </DemoOrderModalProvider>
-    </SessionContextWrapper>
+    </SessionContextProvider>
   );
 }
 
