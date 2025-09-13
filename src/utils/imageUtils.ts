@@ -1,15 +1,15 @@
 import { proxyImageUrl } from '@/utils/imageProxy';
 
-export const addTextToImage = (imageUrl: string, productName: string, orderDisplayId: string): Promise<Blob> => {
+export const addTextToImage = (imageUrl: string, orderDisplayId: string): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.onload = () => {
-      console.log(`Image loaded successfully for order ${orderDisplayId}.`); // Added log
+      console.log(`Image loaded successfully for order ${orderDisplayId}.`);
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        console.error(`Could not get canvas context for order ${orderDisplayId}.`); // Added log
+        console.error(`Could not get canvas context for order ${orderDisplayId}.`);
         return reject(new Error('Could not get canvas context'));
       }
 
@@ -49,16 +49,16 @@ export const addTextToImage = (imageUrl: string, productName: string, orderDispl
 
       canvas.toBlob((blob) => {
         if (blob) {
-          console.log(`Canvas to Blob conversion successful for order ${orderDisplayId}.`); // Added log
+          console.log(`Canvas to Blob conversion successful for order ${orderDisplayId}.`);
           resolve(blob);
         } else {
-          console.error(`Canvas to Blob conversion failed for order ${orderDisplayId}. Blob is null.`); // Added log
+          console.error(`Canvas to Blob conversion failed for order ${orderDisplayId}. Blob is null.`);
           reject(new Error('Canvas to Blob conversion failed'));
         }
       }, 'image/png');
     };
     img.onerror = (err) => {
-      console.error(`Error loading image for text addition for order ${orderDisplayId}:`, err); // Modified log
+      console.error(`Error loading image for text addition for order ${orderDisplayId}:`, err);
       reject(new Error('Failed to load image'));
     };
     img.src = proxyImageUrl(imageUrl);

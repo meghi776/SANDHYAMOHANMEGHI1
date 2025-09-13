@@ -257,9 +257,8 @@ const AllProcessingOrdersPage = () => {
     const downloadPromises = selectedOrders.map(async (order) => {
       if (order.ordered_design_image_url) {
         try {
-          const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
-          const blobWithText = await addTextToImage(order.ordered_design_image_url, orderDisplayId); // Removed productName
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, orderDisplayId);
           const fileName = `${orderDisplayId}.png`;
           zip.file(fileName, blobWithText);
           downloadedCount++;
@@ -299,9 +298,8 @@ const AllProcessingOrdersPage = () => {
     const downloadPromises = orders.map(async (order) => {
       if (order.ordered_design_image_url) {
         try {
-          const productName = order.products?.name || 'Unknown Product';
           const orderDisplayId = order.display_id || order.id;
-          const blobWithText = await addTextToImage(order.ordered_design_image_url, orderDisplayId); // Removed productName
+          const blobWithText = await addTextToImage(order.ordered_design_image_url, orderDisplayId);
           const fileName = `${orderDisplayId}.png`;
           zip.file(fileName, blobWithText);
           downloadedCount++;
