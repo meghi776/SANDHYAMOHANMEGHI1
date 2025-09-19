@@ -63,6 +63,7 @@ const UserOrdersPage = () => {
   const [editCustomerPhone, setEditCustomerPhone] = useState('');
   const [editPaymentMethod, setEditPaymentMethod] = useState('');
   const [editComment, setEditComment] = useState('');
+  const [editTotalPrice, setEditTotalPrice] = useState<string>(''); // New state for editable price
   const [userName, setUserName] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -157,12 +158,19 @@ const UserOrdersPage = () => {
     setEditCustomerPhone(order.customer_phone);
     setEditPaymentMethod(order.payment_method);
     setEditComment(order.comment || '');
+    setEditTotalPrice(order.total_price?.toFixed(2) || ''); // Set price for editing
     setIsEditOrderModalOpen(true);
   };
 
   const handleSaveOrderEdit = async () => {
-    if (!currentOrder || !editStatus || !editCustomerName.trim() || !editCustomerAddress.trim() || !editCustomerPhone.trim() || !editPaymentMethod.trim()) {
+    if (!currentOrder || !editStatus || !editCustomerName.trim() || !editCustomerAddress.trim() || !editCustomerPhone.trim() || !editPaymentMethod.trim() || !editTotalPrice.trim()) {
       showError("All fields are required.");
+      return;
+    }
+
+    const parsedPrice = parseFloat(editTotalPrice);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      showError("Please enter a valid positive price.");
       return;
     }
 
@@ -177,6 +185,7 @@ const UserOrdersPage = () => {
         customer_phone: editCustomerPhone.trim(),
         payment_method: editPaymentMethod.trim(),
         comment: editComment.trim() === '' ? null : editComment.trim(),
+        total_price: parsedPrice, // Update total_price
       })
       .eq('id', currentOrder.id);
 
@@ -539,6 +548,13 @@ const UserOrdersPage = () => {
                     <TableBody>
                       {orders.map((order) => (
                         <TableRow key={order.id}>
+                          <TableCell className="w-[30px]">
+                            <Checkbox
+                              checked={selectedOrderIds.has(order.id)}
+                              onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
+                              aria-label={`Select order ${order.id}`}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium text-xs">{order.display_id || `${order.id.substring(0, 8)}...`}</TableCell>
                           <TableCell>{format(new Date(order.created_at), 'PPP')}</TableCell>
                           <TableCell>{order.products?.name || 'N/A'}</TableCell>
@@ -623,7 +639,14 @@ const UserOrdersPage = () => {
               <Label htmlFor="total-price" className="text-right">
                 Total Price
               </Label>
-              <p id="total-price" className="col-span-3">₹{currentOrder?.total_price?.toFixed(2)}</p>
+              <Input
+                id="total-price"
+                type="number"
+                step="0.01"
+                value={editTotalPrice}
+                onChange={(e) => setEditTotalPrice(e.target.value)}
+                className="col-span-3"
+              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="customer-name" className="text-right">

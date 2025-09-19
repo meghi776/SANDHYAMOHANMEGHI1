@@ -47,7 +47,7 @@ interface Order {
   user_email?: string | null;
   type: string;
   comment: string | null;
-  ordered_design_data: any; // Added for export/import
+  ordered_design_data: any;
 }
 
 const DeliveredOrdersPage = () => {
@@ -65,6 +65,7 @@ const DeliveredOrdersPage = () => {
   const [editCustomerPhone, setEditCustomerPhone] = useState('');
   const [editPaymentMethod, setEditPaymentMethod] = useState('');
   const [editComment, setEditComment] = useState('');
+  const [editTotalPrice, setEditTotalPrice] = useState<string>(''); // New state for editable price
   const [sortColumn, setSortColumn] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
@@ -165,11 +166,21 @@ const DeliveredOrdersPage = () => {
     setEditCustomerPhone(order.customer_phone);
     setEditPaymentMethod(order.payment_method);
     setEditComment(order.comment || '');
+    setEditTotalPrice(order.total_price?.toFixed(2) || ''); // Set price for editing
     setIsEditOrderModalOpen(true);
   };
 
   const handleSaveOrderEdit = async () => {
-    if (!currentOrder) return;
+    if (!currentOrder || !editStatus || !editCustomerName.trim() || !editCustomerAddress.trim() || !editCustomerPhone.trim() || !editPaymentMethod.trim() || !editTotalPrice.trim()) {
+      showError("All fields are required.");
+      return;
+    }
+
+    const parsedPrice = parseFloat(editTotalPrice);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      showError("Please enter a valid positive price.");
+      return;
+    }
 
     const toastId = showLoading("Updating order details...");
     const { error } = await supabase
@@ -181,6 +192,7 @@ const DeliveredOrdersPage = () => {
         customer_phone: editCustomerPhone.trim(),
         payment_method: editPaymentMethod.trim(),
         comment: editComment.trim() === '' ? null : editComment.trim(),
+        total_price: parsedPrice, // Update total_price
       })
       .eq('id', currentOrder.id);
 
@@ -754,6 +766,17 @@ const DeliveredOrdersPage = () => {
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-comment" className="text-right">Comment</Label>
               <Textarea id="edit-comment" value={editComment} onChange={(e) => setEditComment(e.target.value)} className="col-span-3" placeholder="Add an internal comment..." />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-total-price" className="text-right">Total Price</Label>
+              <Input
+                id="edit-total-price"
+                type="number"
+                step="0.01"
+                value={editTotalPrice}
+                onChange={(e) => setEditTotalPrice(e.target.value)}
+                className="col-span-3"
+              />
             </div>
           </div>
           <DialogFooter>
