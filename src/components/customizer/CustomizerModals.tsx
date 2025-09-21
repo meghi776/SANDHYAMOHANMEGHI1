@@ -332,7 +332,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
   return (
     <>
       <Dialog open={isCheckoutModalOpen} onOpenChange={setIsCheckoutModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Checkout</DialogTitle>
             <DialogDescription>Please provide your details to complete the order.</DialogDescription>
@@ -495,7 +495,7 @@ const CustomizerModals: React.FC<CustomizerModalsProps> = ({
       </Dialog>
 
       <Dialog open={isDemoOrderModalOpen} onOpenChange={setIsDemoOrderModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Place Demo Order</DialogTitle>
             <DialogDescription>Enter details for your demo order. This will not be a real purchase.</DialogDescription>
