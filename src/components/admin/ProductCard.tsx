@@ -26,7 +26,7 @@ interface ProductCardProps {
   isSelected: boolean;
   onSelectProduct: (productId: string, isChecked: boolean) => void;
   onToggleDisable: (productId: string, currentStatus: boolean) => void;
-  onDeleteProduct: (product: Product) => void;
+  onDeleteProduct: (product: Product) => void; // This now triggers permanent deletion
   onDuplicateProduct: (product: Product) => void;
   showCategoryBrand?: boolean;
 }
@@ -96,9 +96,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <Button
           variant="destructive"
           size="sm"
-          onClick={() => onDeleteProduct(product)}
+          onClick={() => onDeleteProduct(product)} // This now triggers permanent deletion
         >
-          <Trash2 className="h-4 w-4 mr-1" /> Disable
+          <Trash2 className="h-4 w-4 mr-1" /> Delete
         </Button>
       </CardFooter>
     </Card>

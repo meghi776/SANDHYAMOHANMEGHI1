@@ -150,26 +150,59 @@ const AllProductsManagementPage = () => {
   }, [searchQuery]);
 
   const handleDeleteProduct = async (product: Product) => {
-    if (!window.confirm("Are you sure you want to disable this product? It will be hidden from customers but preserved for existing orders.")) {
+    if (!window.confirm("Are you sure you want to permanently delete this product? This will also delete its associated mockups and images, and cannot be undone.")) {
       return;
     }
     setLoading(true);
-    const toastId = showLoading("Disabling product...");
+    const toastId = showLoading("Deleting product...");
     
-    const { error } = await supabase
-      .from('products')
-      .update({ is_disabled: true })
-      .eq('id', product.id);
+    try {
+      // 1. Fetch and delete associated mockups and their images
+      const { data: mockupsToDelete, error: fetchMockupsError } = await supabase
+        .from('mockups')
+        .select('id, image_url')
+        .eq('product_id', product.id);
 
-    if (error) {
-      console.error("Error disabling product:", error);
-      showError(`Failed to disable product: ${error.message}`);
-    } else {
-      showSuccess("Product disabled successfully!");
-      fetchProducts();
+      if (fetchMockupsError) {
+        throw new Error(`Failed to fetch mockups for deletion: ${fetchMockupsError.message}`);
+      }
+
+      for (const mockup of mockupsToDelete || []) {
+        if (mockup.image_url) {
+          const fileName = mockup.image_url.split('/').pop();
+          if (fileName) {
+            await deleteFileFromSupabase(`mockups/${fileName}`, 'order-mockups');
+          }
+        }
+        // Delete mockup entry from the database
+        const { error: deleteMockupEntryError } = await supabase
+          .from('mockups')
+          .delete()
+          .eq('id', mockup.id);
+        if (deleteMockupEntryError) {
+          console.warn(`Failed to delete mockup entry ${mockup.id}: ${deleteMockupEntryError.message}`);
+        }
+      }
+
+      // 2. Delete the product itself
+      const { error: deleteProductError } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', product.id);
+
+      if (deleteProductError) {
+        throw new Error(`Failed to delete product: ${deleteProductError.message}`);
+      }
+
+      showSuccess("Product deleted permanently!");
+      fetchProducts(); // Re-fetch products after deletion
+    } catch (err: any) {
+      console.error("Error deleting product and associated data:", err);
+      showError(`Failed to delete product: ${err.message}`);
+    } finally {
+      dismissToast(toastId);
+      setLoading(false);
     }
-    dismissToast(toastId);
-    setLoading(false);
   };
 
   const handleDuplicateProduct = (product: Product) => {
